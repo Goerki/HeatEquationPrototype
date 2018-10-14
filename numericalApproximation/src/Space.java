@@ -1,7 +1,6 @@
 
 public class Space {
     Cell[][][] cells;
-    Cell noCell;
     int size;
 
     Space(int size){
@@ -15,7 +14,6 @@ public class Space {
             }
         }
     }
-
 
     private long calcTemperatureFlowFromCell(int x, int y, int z, Cell cell) {
         if (cell == null) {

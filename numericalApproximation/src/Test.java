@@ -9,7 +9,7 @@ public class Test {
         System.out.println(space.toString());
 
 
-        for (int i =0; i < 100000; i++){
+       for (int i =0; i < 100000; i++){
 //            System.out.println(i+" \n");
             space.calcSpace();
         }
