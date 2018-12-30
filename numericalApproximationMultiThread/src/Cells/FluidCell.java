@@ -1,4 +1,4 @@
-package Cell;
+package Cells;
 
 public class FluidCell extends Cell {
 
@@ -11,10 +11,10 @@ public class FluidCell extends Cell {
 
 
     public boolean isSolid(){
-        return true;
+        return false;
     }
 
     public boolean isFluid(){
-        return false;
+        return true;
     }
 }

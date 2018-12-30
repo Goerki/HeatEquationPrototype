@@ -1,11 +1,10 @@
-import Cell.Cell;
-import java.lang.Math.*;
-import Jama.Matrix;
+import Cells.Cell;
+import Cells.Coordinates;
 
 public class SystemOfEquations {
     double[][] equations;
     int dimension;
-
+/*
     SystemOfEquations(Cell[][][] cells){
         this.dimension = cells.length;
         this.equations = new double[dimension*dimension*dimension][dimension*dimension*dimension];
@@ -81,5 +80,5 @@ public class SystemOfEquations {
 
     }
 
-
+*/
 }

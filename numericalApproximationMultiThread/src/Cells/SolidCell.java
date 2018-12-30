@@ -1,4 +1,4 @@
-package Cell;
+package Cells;
 
 public class SolidCell extends Cell {
 

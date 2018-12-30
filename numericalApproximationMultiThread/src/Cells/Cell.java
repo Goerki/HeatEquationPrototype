@@ -1,10 +1,12 @@
-package Cell;
+package Cells;
 
 public class Cell {
     protected double value;
     protected double oldValue;
     protected double norm;
     protected boolean isFluid;
+    public String material;
+    public boolean isInitialized = false;
 
     public double getAlpha(){
         return this.norm;

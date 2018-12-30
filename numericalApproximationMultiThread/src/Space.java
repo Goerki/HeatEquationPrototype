@@ -1,62 +1,152 @@
-import Cell.Cell;
+import Cells.Cell;
 
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import  Cell.SolidCell;
-import  Cell.FluidCell;
+
+import Cells.Cells;
+import  Cells.FluidCell;
+import Cells.CellArea;
+import  Cells.Coordinates;
+
 
 
 public class Space {
-    Cell[][][] cells;
-    int size;
+    Cells allCells;
+    int sizeX;
+    int sizeY;
+    int sizeZ;
+    int numberCellsForSolidCalculation;
     CalculationThread[] calculationThreads;
     int numberThreads;
+    boolean isInitialized = false;
     SystemOfEquations fluidEquations;
+    List<CellArea> areas;
 
-    Space(int size){
-        cells = new Cell[size][size][size];
-        this.size = size;
-        for (int i=0; i< size; i++){
-            for(int j=0;j< size; j++){
-                for(int k=0; k<size; k++){
-                    cells[i][j][k] = new FluidCell(10, 1000);
-                }
-            }
-        }
+    Space(int sizeX, int sizeY, int sizeZ, double startValue, double startViskosity, int numberThreads){
+        this.sizeX= sizeX;
+        this.sizeY= sizeY;
+        this.sizeZ= sizeZ;
+        this.allCells = new Cells(sizeX, sizeY, sizeZ, startValue, startViskosity);
+        this.numberThreads=numberThreads;
 
-        this.createCalculationThreads(1);
-/*
-        for (int i=20; i< 30; i++){
-            for(int j=20;j< 30; j++){
-                for(int k=20; k<30; k++){
-                    cells[i][j][k].setValue(50);
-                }
-            }
-        }
-        */
+    }
 
+    public void createSolidCube(int x1, int y1, int z1, int x2, int y2, int z2, double value, double alpha){
+        this.allCells.makeCubeSolidCells(x1,y1,z1,x2,y2,z2,value, alpha);
+    }
+
+    public void createFluidCube(int x1, int y1, int z1, int x2, int y2, int z2, double value, double viskosity){
+        this.allCells.makeCubeFluidCells(x1,y1,z1,x2,y2,z2,value, viskosity);
+    }
+
+
+    boolean initialize(double time){
+        //Create areas
+        if (this.isInitialized)
+            return false;
+
+        this.isInitialized=true;
+        this.createAreas();
+
+        // TODO: calculate steps and delta T
+        double deltaT = 0.005;
+        int steps = (int)(time/deltaT);
+
+
+        //create Threads
+
+        this.createCalculationThreads(this.numberThreads, steps);
+
+        return true;
     }
 
 
     double[][] getZLayer(int z){
-        double[][] result = new double[size][size];
-        for (int x = 0; x < size; x ++){
-            for (int y=0;y<size; y++) {
-                result[x][y] = this.cells[x][y][z].getDoubleValue();
+        double[][] result = new double[sizeX][sizeY];
+        for (int x = 0; x < sizeX; x ++){
+            for (int y=0;y<sizeY; y++) {
+                result[x][y] = this.allCells.getCell(x,y,z).getValue();
             }
         }
         return result;
     }
 
+    private boolean[][][] getFalseArray(){
+        boolean [][][] result= new boolean[this.sizeX][this.sizeY][this.sizeZ];
+        for(int x = 0; x < this.sizeX; x++){
+            for(int y=0; y<this.sizeY; y++){
+                for(int z = 0;z<this.sizeZ; z++){
+                    result[x][y][z]= false;
+                }
+            }
+        }
+        return result;
+    }
+
+    private void createAreas(){
+        this.areas = new ArrayList<>();
+         for(Coordinates coord:Coordinates.getAllCoordinates(this.sizeX, this.sizeY, this.sizeZ)){
+             //check if cell already in a area
+            if (!allCells.getCell(coord).isInitialized){
+                //create new Area
+                areas.add(new CellArea(this.allCells, coord));
+                //set all cells inside this area to initialized
+                this.allCells.setCellsToInitialized(this.areas.get(this.areas.size()-1).coords);
+            }
+
+        }
+
+    }
+
+    private void setNumberSolidCells(){
+        this.numberCellsForSolidCalculation = this.allCells.getCellsForSolidCalculation().size();
+    }
+
+
+    private void createCalculationThreads(int numberThreads, int steps){
+        this.numberThreads = numberThreads;
+        int threadSize = this.numberCellsForSolidCalculation/numberThreads;
+        calculationThreads = new CalculationThread[numberThreads];
+        int tempStart = 0;
+        int tempStop = threadSize;
+        List<Coordinates> solidCalcCells = this.allCells.getCellsForSolidCalculation();
+
+        for (int i = 0; i<= numberThreads; i++){
+
+            if (i == numberThreads){
+
+                calculationThreads[i] = new CalculationThread(this, solidCalcCells.subList(tempStart, solidCalcCells.size()),steps);
+            } else {
+                calculationThreads[i] = new CalculationThread(this, solidCalcCells.subList(tempStart, tempStop), steps);
+                tempStart += threadSize;
+                tempStop += threadSize-1;
+                System.out.print("start: " + tempStart + "end : " + tempStop);
+            }
+
+        }
+    }
+
+    double[][] getYLayer(int y){
+        double[][] result = new double[sizeX][sizeZ];
+        for (int x = 0; x < sizeX; x ++){
+            for (int z=0;z<sizeZ; z++) {
+                result[x][y] = this.allCells.getCell(x,y,z).getValue();
+            }
+        }
+        return result;
+    }
     double[][] getXLayer(int x){
-        double[][] result = new double[size][size];
-        for (int y=0;y<size; y++) {
-            for (int z=0;z<size; z++) {
-                result[y][z] = this.cells[x][y][z].getDoubleValue();
+        double[][] result = new double[sizeY][sizeZ];
+        for (int y=0;y<sizeY; y++) {
+            for (int z=0;z<sizeZ; z++) {
+                result[x][y] = this.allCells.getCell(x,y,z).getValue();
             }
         }
         return result;
     }
-
+/*
     private void createCalculationThreads(){
         this.createCalculationThreads(this.numberThreads);
     }
@@ -81,27 +171,16 @@ public class Space {
         if (cellB == null || cellB.isFluid()) {
             return 0;
         }
+        */
         /*
         if (x==20 && y==20 && z == 20){
             System.out.print("\nLastCellValue: " + cell.getLastValue()+ " LastOwnCellValue: " + ownCell.getLastValue() + " alpha: " + cell.getAlpha());
         }
         */
-        return ((cellA.getLastValue() - cellB.getLastValue())/cellB.getAlpha());
-    }
+       // return ((cellA.getLastValue() - cellB.getLastValue())/cellB.getAlpha());
+   // }
 
-    Cell getCell(int x, int y, int z){
-        if (x < 0 || x >= size) {
-            return null;
-        }
-        if (y < 0 || y >= size) {
-            return null;
-        }
-        if (z < 0 || z >= size) {
-            return null;
-        }
-        return this.cells[x][y][z];
-    }
-
+/*
     private void calcNewValueForSolidCell(int x, int y, int z){
         this.cells[x][y][z].setValue(this.getCell(x,y,z).getValue() + calcSolidTemperatureFlowFromCellAToCellB(this.getCell(x,y,z),this.getCell(x-1,y,z))
                 + calcSolidTemperatureFlowFromCellAToCellB(this.getCell(x,y,z),this.getCell(x+1,y,z))
@@ -202,4 +281,6 @@ public class Space {
         }
         return result;
     }
+
+    */
 }

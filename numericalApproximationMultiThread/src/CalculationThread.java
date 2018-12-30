@@ -1,13 +1,15 @@
+import Cells.Coordinates;
+
+import java.util.List;
+
 public class CalculationThread extends Thread {
     Space space;
-    int xStart;
-    int xEnd;
+    List<Coordinates> cells;
     int counter;
 
-    public CalculationThread(Space space, int xStart, int xStop){
+    public CalculationThread(Space space, List<Coordinates> cells, int steps){
         this.space = space;
-        this.xStart = xStart;
-        this.xEnd = xStop;
+        this.cells = cells;
         this.counter = 100;
     }
 
@@ -19,7 +21,7 @@ public class CalculationThread extends Thread {
 
     public void run(){
         for (int i = 0; i< this.counter; i++) {
-            this.space.calcSpaceFromTo(this.xStart, this.xEnd);
+  //          this.space.calcSpaceFromTo(this.xStart, this.xEnd);
         }
     }
 }

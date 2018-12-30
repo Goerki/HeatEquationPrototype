@@ -8,9 +8,17 @@ public class Test {
 
     public static void main(String[] args) {
 
+        StartupWindow test = new StartupWindow();
+        test.pack();
+        test.setVisible(true);
 
+    }
 
-        Space space = new Space(3);
+    public static void test(){
+        Space space = new Space(3,3,3,50,100,1);
+        space.createSolidCube(1,0,0,1,2,2,10,100);
+
+        space.initialize(10);
         System.out.println("gubl \n");
         long beginTime = System.currentTimeMillis();
         System.out.println(space.toString());
@@ -25,8 +33,6 @@ public class Test {
 
 
 
-
-            space.calcSpace(10000, 1000);
         long endTime = System.currentTimeMillis();
         long duration = endTime - beginTime;
 
