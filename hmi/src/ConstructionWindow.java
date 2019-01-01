@@ -27,7 +27,7 @@ public class ConstructionWindow extends JDialog {
     private JComboBox axisSelection;
     private JSlider layerSlider;
     private JButton saveButton;
-    private JButton generateButton;
+    private JButton solidGenerateButton;
     private DrawingTable drawingTable;
     private JTextField textField1X;
     private JTextField textField1Z;
@@ -45,6 +45,8 @@ public class ConstructionWindow extends JDialog {
     private JTextPane currentLayerSelectionTextPane;
     private JComboBox fluidMaterialSelection;
     private JTextField viskosityTextField;
+    private JButton fluidGenerateButton;
+    private JButton boundaryGenerateButton;
     public Space space;
 
     private void newArea(){
@@ -84,7 +86,7 @@ getRootPane().disable();
             }
         });
 
-        generateButton.addActionListener(new ActionListener() {
+        solidGenerateButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {onGenerate();}
         });
 
