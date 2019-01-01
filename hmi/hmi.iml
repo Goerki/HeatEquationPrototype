@@ -7,5 +7,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="NumericalApproximationMultiThread" />
+    <orderEntry type="library" name="json-lib-2.4-jdk15" level="project" />
+    <orderEntry type="library" exported="" name="gson-2.6.2" level="project" />
   </component>
 </module>

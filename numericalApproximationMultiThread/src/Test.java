@@ -1,22 +1,30 @@
-import org.tc33.jheatchart.HeatChart;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Test {
 
     public static void main(String[] args) {
-
-        StartupWindow test = new StartupWindow();
+     StartupWindow test = new StartupWindow();
         test.pack();
         test.setVisible(true);
 
+
     }
 
+
+/*
     public static void test(){
         Space space = new Space(3,3,3,50,100,1);
-        space.createSolidCube(1,0,0,1,2,2,10,100);
+        space.createSolidCube(1,0,0,1,2,2,10,"Iron");
 
         space.initialize(10);
         System.out.println("gubl \n");
@@ -60,6 +68,7 @@ public class Test {
             System.out.print("exception");
         }
     }
+    */
 }
 
 

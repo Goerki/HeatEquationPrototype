@@ -1,0 +1,32 @@
+{
+  "SolidMaterials":[
+    {
+      "name":"iron",
+      "alpha":"100",
+      "color":"D7D7D7"
+    },
+    {
+      "name":"copper",
+      "alpha":"120",
+      "color":"DBA372"
+    },
+    {
+      "name":"concrete",
+      "alpha":"50",
+      "color":"C2C2C2"
+    },
+    {
+      "name":"wood",
+      "alpha":"20",
+      "color":"A16614"
+    }
+  ],
+  "FluidMaterials":[
+    {
+      "name":"air",
+      "viskosity":"100",
+      "color":"DFFFFF"
+    }
+
+  ]
+}

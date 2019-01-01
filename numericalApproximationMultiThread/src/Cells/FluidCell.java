@@ -2,11 +2,12 @@ package Cells;
 
 public class FluidCell extends Cell {
 
-    public FluidCell(double value, double alpha) {
+    public FluidCell(double value, Material material) {
         this.value= value;
-        this.norm = alpha;
+        this.norm = material.viskosity;
         this.value= oldValue;
         this.isFluid = true;
+        this.material= material;
     }
 
 

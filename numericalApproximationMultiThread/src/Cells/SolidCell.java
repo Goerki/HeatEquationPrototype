@@ -4,11 +4,12 @@ public class SolidCell extends Cell {
 
 
 
-    public SolidCell(double value, double alpha) {
+    public SolidCell(Material material) {
         this.value = value;
         this.oldValue = value;
-        this.norm = alpha;
+        this.norm = material.alpha;
         this.isFluid = false;
+        this.material = material;
 
 
     }

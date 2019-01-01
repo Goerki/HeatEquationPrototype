@@ -1,16 +1,10 @@
-import Cells.Cell;
-
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import Cells.Cells;
-import  Cells.FluidCell;
 import Cells.CellArea;
 import  Cells.Coordinates;
-
-
+import Cells.Material;
 
 public class Space {
     Cells allCells;
@@ -24,23 +18,36 @@ public class Space {
     SystemOfEquations fluidEquations;
     List<CellArea> areas;
 
-    Space(int sizeX, int sizeY, int sizeZ, double startValue, double startViskosity, int numberThreads){
+    Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
         this.sizeX= sizeX;
         this.sizeY= sizeY;
         this.sizeZ= sizeZ;
-        this.allCells = new Cells(sizeX, sizeY, sizeZ, startValue, startViskosity);
+        this.allCells = new Cells(sizeX, sizeY, sizeZ, startValue, material);
         this.numberThreads=numberThreads;
 
     }
 
-    public void createSolidCube(int x1, int y1, int z1, int x2, int y2, int z2, double value, double alpha){
-        this.allCells.makeCubeSolidCells(x1,y1,z1,x2,y2,z2,value, alpha);
+    public void createCube(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
+        if (material.isSolid()){
+            this.allCells.makeCubeSolidCells(x1, y1, z1, x2, y2, z2, material);
+        } if (material.isFluid()){
+            this.allCells.makeCubeFluidCells(x1,y1,z1,x2,y2,z2,material);
+        }
+
     }
 
-    public void createFluidCube(int x1, int y1, int z1, int x2, int y2, int z2, double value, double viskosity){
-        this.allCells.makeCubeFluidCells(x1,y1,z1,x2,y2,z2,value, viskosity);
+    public int getSize(String axis){
+        if (axis.toLowerCase().contains("x")){
+            return sizeX;
+        }
+        if (axis.toLowerCase().contains("y")){
+            return sizeY;
+        }
+        if (axis.toLowerCase().contains("z")){
+            return sizeZ;
+        }
+        return 0;
     }
-
 
     boolean initialize(double time){
         //Create areas

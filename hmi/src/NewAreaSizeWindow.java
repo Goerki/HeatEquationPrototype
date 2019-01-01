@@ -75,11 +75,12 @@ public class NewAreaSizeWindow extends JDialog {
     private void onOK() {
         // add your code here
         if (this.validInput()) {
+            dispose();
             ConstructionWindow nextWindow = new ConstructionWindow(Integer.valueOf(sizeXField.getText()),
                     Integer.valueOf(sizeYField.getText()), Integer.valueOf(sizeZField.getText()));
             nextWindow.pack();
             nextWindow.setVisible(true);
-            dispose();
+
         } else {
 
             onFail();

@@ -6,35 +6,35 @@ import java.util.List;
 
 public class Cells {
     Cell[][][] cells;
-    int sizeX;
-    int sizeY;
-    int sizeZ;
+    public int sizeX;
+    public int sizeY;
+    public int sizeZ;
     List<Coordinates> coords;
     List<Coordinates> cellsForSolidCalculation;
 
-    public Cells(int size, double value, double viskosity){
+    public Cells(int size, double value, Material material){
         this.sizeX = size;
         this.sizeY = size;
         this.sizeZ = size;
         cells = new Cell[size][size][size];
         initCoords();
-        initAllCells(value, viskosity);
+        initAllCells(value, material);
         cellsForSolidCalculation = new ArrayList<>();
     }
 
-    public Cells(int sizeX, int sizeY, int sizeZ, double value, double viskosity){
+    public Cells(int sizeX, int sizeY, int sizeZ, double value, Material material){
         this.sizeX = sizeX;
         this.sizeY = sizeY;
         this.sizeZ = sizeZ;
         cells = new Cell[sizeX][sizeY][sizeZ];
         this.initCoords();
-        this.initAllCells(value, viskosity);
+        this.initAllCells(value, material);
      }
 
-     private void initAllCells(double value, double viskosity){
+     private void initAllCells(double value, Material material){
         for (Coordinates tempCoord: this.coords){
             try {
-                this.makeSingleFluidCell(tempCoord,value, viskosity );
+                this.makeSingleFluidCell(tempCoord,value, material );
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -174,14 +174,14 @@ public class Cells {
         }
     }
 
-    public void makeCubeFluidCells(int x1, int y1, int z1, int x2, int y2, int z2, double value, double viskosity){
-        this.makeCubeFluidCells(new Coordinates(x1,y1,z1), new Coordinates(x2,y2,z2), value, viskosity);
+    public void makeCubeFluidCells(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
+        this.makeCubeFluidCells(new Coordinates(x1,y1,z1), new Coordinates(x2,y2,z2), material);
     }
 
-    public void makeCubeFluidCells(Coordinates chord1, Coordinates chord2, double value, double viskosity){
+    public void makeCubeFluidCells(Coordinates chord1, Coordinates chord2, Material material){
         for(Coordinates coords:Coordinates.getCoordsbetween(chord1, chord2)){
             try {
-                this.makeSingleFluidCell(coords, value, viskosity);
+                this.makeSingleFluidCell(coords, this.getCell(coords).value , material);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.print("info: Cordinate " + coords + " not found in cells. " + e.toString());
@@ -189,23 +189,23 @@ public class Cells {
         }
     }
 
-    public void makeSingleFluidCell(Coordinates coord, double value, double viskosity) throws Exception{
-        this.makeSingleFluidCell(coord.x, coord.y, coord.z, value, viskosity);
+    public void makeSingleFluidCell(Coordinates coord,double value, Material material) throws Exception{
+        this.makeSingleFluidCell(coord.x, coord.y, coord.z, value, material);
     }
 
-    public void makeSingleFluidCell(int x, int y, int z, double value, double viskosity) throws Exception{
-        this.cells[x][y][z]= new FluidCell(value, viskosity);
+    public void makeSingleFluidCell(int x, int y, int z,double value, Material material) throws Exception{
+        this.cells[x][y][z]= new FluidCell(value, material);
     }
 
-    public void makeCubeSolidCells(int x1, int y1, int z1, int x2, int y2, int z2, double value, double alpha){
-        this.makeCubeSolidCells(new Coordinates(x1,y1,z1), new Coordinates(x2,y2,z2), value, alpha);
+    public void makeCubeSolidCells(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
+        this.makeCubeSolidCells(new Coordinates(x1,y1,z1), new Coordinates(x2,y2,z2),material);
 
     }
 
-    public void makeCubeSolidCells(Coordinates chord1, Coordinates chord2, double value, double alpha){
+    public void makeCubeSolidCells(Coordinates chord1, Coordinates chord2, Material material){
         for(Coordinates coords:Coordinates.getCoordsbetween(chord1, chord2)){
             try {
-                this.makeSingleSolidCell(coords, value, alpha);
+                this.makeSingleSolidCell(coords, material);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.print("info: Cordinate " + coords + " not found in cells. " + e.toString());
@@ -213,11 +213,15 @@ public class Cells {
         }
     }
 
-    public void makeSingleSolidCell(int x, int y, int z, double value, double alpha) throws Exception{
-        this.cells[x][y][z]= new SolidCell(value, alpha);
+    public void makeSingleSolidCell(int x, int y, int z,double alpha, Material material) throws Exception{
+        this.cells[x][y][z]= new SolidCell(material);
     }
-    public void makeSingleSolidCell(Coordinates coord, double value, double alpha) throws Exception{
-        this.cells[coord.x][coord.y][coord.z]= new SolidCell(value, alpha);
+    public void makeSingleSolidCell(Coordinates coord, Material material) throws Exception{
+        if (coord.x >= sizeX || coord.y >= sizeY || coord.z >= sizeZ){
+            return;
+        }
+        System.out.print("\nnew solid cell: " + coord.x + coord.y+ coord.z);
+        this.cells[coord.x][coord.y][coord.z]= new SolidCell(material);
     }
 
     public Cell getCell(int x, int y, int z){
@@ -226,5 +230,36 @@ public class Cells {
 
     public Cell getCell(Coordinates tempCoords){
         return this.cells[tempCoords.x][tempCoords.y][tempCoords.z];
+    }
+
+    public Cell[][] getCellsForLayer(String layer, int value){
+        if (layer.toLowerCase().contains("x")){
+            Cell[][] result = new Cell[sizeY][sizeZ];
+            for (int y=0; y<sizeY;y++){
+                for (int z=0;z<sizeZ;z++){
+                    result[y][z]=cells[value][y][z];
+                }
+            }
+            return result;
+        }
+        if (layer.toLowerCase().contains("y")){
+            Cell[][] result = new Cell[sizeZ][sizeX];
+            for (int x=0; x<sizeX;x++){
+                for (int z=0;z<sizeZ;z++){
+                    result[z][x]=cells[x][value][z];
+                }
+            }
+            return result;
+        }
+        if (layer.toLowerCase().contains("z")){
+            Cell[][] result = new Cell[sizeX][sizeY];
+            for (int x=0; x<sizeX;x++){
+                for (int y=0;y<sizeY;y++){
+                    result[x][y]=cells[x][y][value];
+                }
+            }
+            return result;
+        }
+      return null;
     }
 }
