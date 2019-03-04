@@ -1,3 +1,4 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -5,18 +6,26 @@ import Cells.Cells;
 import Cells.CellArea;
 import  Cells.Coordinates;
 import Cells.Material;
+import  Cells.Cell;
+import  Cells.FluidCell;
 
-public class Space {
+public class Space implements Serializable {
     Cells allCells;
     int sizeX;
     int sizeY;
     int sizeZ;
     int numberCellsForSolidCalculation;
     CalculationThread[] calculationThreads;
+    MainThread mainThread;
     int numberThreads;
     boolean isInitialized = false;
     SystemOfEquations fluidEquations;
     List<CellArea> areas;
+    private double deltaT;
+    private double cellLength;
+    private int numberSteps;
+    private int numberCalculatedSteps;
+
 
     Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
         this.sizeX= sizeX;
@@ -24,17 +33,32 @@ public class Space {
         this.sizeZ= sizeZ;
         this.allCells = new Cells(sizeX, sizeY, sizeZ, startValue, material);
         this.numberThreads=numberThreads;
+        this.cellLength = 1;
 
     }
 
-    public void createCube(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
+    public String createCube(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
         if (material.isSolid()){
-            this.allCells.makeCubeSolidCells(x1, y1, z1, x2, y2, z2, material);
+            return this.allCells.makeCubeSolidCells(x1, y1, z1, x2, y2, z2, material);
         } if (material.isFluid()){
-            this.allCells.makeCubeFluidCells(x1,y1,z1,x2,y2,z2,material);
+            return this.allCells.makeCubeFluidCells(x1,y1,z1,x2,y2,z2,material);
+        }
+        else{
+            return "please check material definition in json file";
         }
 
     }
+    public double getMinimumTemperature(){
+        return allCells.getMinimumTemperature();
+    }
+    public double getMaximumTemperature(){
+        return allCells.getMaximumTemperature();
+    }
+
+    public String setBoundariesForCube(int x1, int y1, int z1, int x2, int y2, int z2, double constantTemperature, double heatFlow, double startingTemperature){
+        return this.allCells.setBoundariesForCube(x1,y1,z1,x2,y2,z2, constantTemperature, heatFlow, startingTemperature);
+    }
+
 
     public int getSize(String axis){
         if (axis.toLowerCase().contains("x")){
@@ -49,23 +73,33 @@ public class Space {
         return 0;
     }
 
-    boolean initialize(double time){
+    List<CellArea> getFluidCellAreas(){
+        List<CellArea> result = new ArrayList<>();
+        for (CellArea area: areas){
+            if (area.isFluid()){
+                result.add(area);
+            }
+        }
+        return result;
+    }
+
+    boolean initialize(double time, double deltaT, int numberThreads){
         //Create areas
         if (this.isInitialized)
             return false;
 
         this.isInitialized=true;
         this.createAreas();
+        this.deltaT = deltaT;
+        this.numberCalculatedSteps = 0;
+
 
         // TODO: calculate steps and delta T
-        double deltaT = 0.005;
-        int steps = (int)(time/deltaT);
-
+          this.numberSteps = (int)(time/deltaT);
 
         //create Threads
-
-        this.createCalculationThreads(this.numberThreads, steps);
-
+        this.numberThreads = numberThreads;
+        this.createCalculationThreads(this.numberThreads, numberSteps);
         return true;
     }
 
@@ -102,10 +136,25 @@ public class Space {
                 //set all cells inside this area to initialized
                 this.allCells.setCellsToInitialized(this.areas.get(this.areas.size()-1).coords);
             }
-
         }
 
+        for(CellArea area: areas){
+            double[] values =  new double[area.getMaxY() - area.getMinY() + 1];
+            for (int layer = 0; layer <= (area.getMaxY() - area.getMinY()); layer++) {
+                values[layer] = allCells.getMeanLastValueFor(area.getCellsForLayer(layer+area.getMinY()));
+            }
+            area.setMeanValues(values);
+
+            if (area.isFluid()){
+                for (Coordinates tempCoord: area.coords){
+
+                    allCells.getCell(tempCoord).getAsFluidCell().setCellArea(area);
+                }
+            }
+        }
     }
+
+
 
     private void setNumberSolidCells(){
         this.numberCellsForSolidCalculation = this.allCells.getCellsForSolidCalculation().size();
@@ -113,25 +162,36 @@ public class Space {
 
 
     private void createCalculationThreads(int numberThreads, int steps){
+        setNumberSolidCells();
         this.numberThreads = numberThreads;
-        int threadSize = this.numberCellsForSolidCalculation/numberThreads;
-        calculationThreads = new CalculationThread[numberThreads];
-        int tempStart = 0;
-        int tempStop = threadSize;
+        List<Coordinates> fluidCalcCells = this.allCells.getAllFluidCells();
+        calculationThreads = new CalculationThread[numberThreads-1];
+
         List<Coordinates> solidCalcCells = this.allCells.getCellsForSolidCalculation();
 
-        for (int i = 0; i<= numberThreads; i++){
+        for (int i = -1; i< numberThreads-1; i++){
+            if (i==-1){
+                this.mainThread = new MainThread(this, getSublistForList(solidCalcCells, numberThreads, 0),getSublistForList(fluidCalcCells, numberThreads, 0), steps, this.getFluidCellAreas());
 
-            if (i == numberThreads){
-
-                calculationThreads[i] = new CalculationThread(this, solidCalcCells.subList(tempStart, solidCalcCells.size()),steps);
             } else {
-                calculationThreads[i] = new CalculationThread(this, solidCalcCells.subList(tempStart, tempStop), steps);
-                tempStart += threadSize;
-                tempStop += threadSize-1;
-                System.out.print("start: " + tempStart + "end : " + tempStop);
+                calculationThreads[i] = new CalculationThread(this, getSublistForList(solidCalcCells, numberThreads, i+1),getSublistForList(fluidCalcCells, numberThreads, i+1), steps);
             }
+        }
+        mainThread.setThreads(calculationThreads);
+    }
 
+    private List<Coordinates> getSublistForList(List<Coordinates> list, int numberSubLists, int index){
+        int intervalSize = list.size()/numberSubLists;
+        if (list.size()==0){
+            return list;
+        }
+        if (numberSubLists == index+1){
+            int indexmalSize = index*intervalSize;
+            return list.subList(index*intervalSize, list.size());
+        } else {
+            int indexmalSize = index*intervalSize;
+            int endInterval = (index+1)*intervalSize;
+            return list.subList(index*intervalSize, intervalSize*(index+1));
         }
     }
 
@@ -153,6 +213,127 @@ public class Space {
         }
         return result;
     }
+
+    public int startCalculation(){
+        if (!this.isInitialized){
+            return -1;
+        }
+        mainThread.start();
+        return 0;
+    }
+
+    public void calcSolidCells(List<Coordinates> range){
+        for(Coordinates coord:range){
+            this.calcNewValueForSolidCell(coord);
+        }
+    }
+
+    public void updateAllValues(){
+        allCells.updateAllOldValues();
+    }
+
+    private void calcNewValueForSolidCell(Coordinates coords){
+        if (allCells.getCell(coords).getConstantTemperature()!= -1){
+            return;
+        }
+        allCells.getCell(coords).setValue(0);
+            Coordinates ausgabe = new Coordinates(0,7,2);
+        for(Coordinates neighbourCell: allCells.getAllAdjacentCellsForSolidCalculation(coords)) {
+            if (allCells.getCell(coords).isFluid()){
+                allCells.getCell(coords).addToValue((allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue()) *allCells.getCell(coords).getAsFluidCell().getNusseltNumber());
+            } else {
+                double diff = allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue();
+                allCells.getCell(coords).addToValue(allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue() );
+            }
+        }
+        if (coords.equals(ausgabe)){
+            System.out.print("\ndifference before: " + allCells.getCell(coords).getValue());
+        }
+        allCells.getCell(coords).setValue(allCells.getCell(coords).getValue() *this.deltaT*allCells.getCell(coords).getAlpha()/this.cellLength);
+
+        if (coords.equals(ausgabe)){
+            System.out.print("\ndifference after: " + allCells.getCell(coords).getValue());
+        }
+        allCells.getCell(coords).addToValue(allCells.getCell(coords).getLastValue());
+        allCells.getCell(coords).addToValue(allCells.getCell(coords).getHeatFlow()*this.deltaT);
+        if (coords.equals(ausgabe)){
+            System.out.print("\nZelle " + ausgabe + " : temperatur " + allCells.getCell(coords).getValue());
+        }
+
+    }
+
+
+    public boolean calculationReady(){
+       return this.numberCalculatedSteps >= this.numberSteps;
+
+    }
+
+    public double getPercentageOfStatus(){
+        System.out.print("\ncalculatedSteps: " + numberCalculatedSteps + " numberSteps "+ numberSteps + "bruch: " + (double)numberCalculatedSteps/(double)numberSteps);
+        return ((double)numberCalculatedSteps/(double)numberSteps * 100.0);
+    }
+
+    public void increaseNumberCalculatedSteps(){
+        numberCalculatedSteps++;
+    }
+
+    public void calculateParticleFlowForCells(List<Coordinates> fluidCells){
+        for (Coordinates coord:fluidCells){
+            this.calculateParticleFlow(coord);
+        }
+    }
+
+    private void calculateParticleFlow(Coordinates coord){
+        double diffusion = this.calcDiffusionForCell(coord);
+        double convection = 0;
+        //System.out.print("diffussion: " + diffusion);
+        for(Coordinates neighbor:allCells.getAllAdjacentFluidCells(coord)){
+            this.particleFlowFromTo(coord, neighbor, diffusion);
+        }
+        allCells.getCell(coord).getAsFluidCell().calcDiffussionToBorderCell(diffusion);
+        if (allCells.cellExists(coord.getCellYPlus1()) && allCells.getCell(coord.getCellYPlus1()).isFluid()){
+            convection = this.calcConvectionForCell(coord);
+            //System.out.print("convection: " + convection);
+
+            this.particleFlowFromTo(coord, coord.getCellYPlus1(), convection);
+        }
+        if(allCells.getCell(coord).getAsFluidCell().hasBorderCellOnTop()){
+            allCells.getCell(coord).getAsFluidCell().calcConvectionOverBorder(this.calcConvectionForCell(coord));
+        }
+        double diff = allCells.getCell(coord).getAsFluidCell().getLastNumberParticles() - allCells.getCell(coord).getAsFluidCell().getNumberParticles();
+        System.out.print("\nflow for " + coord.toString() + " : " + diff + " for lasNumberPart " + allCells.getCell(coord).getAsFluidCell().getLastNumberParticles());
+    }
+
+    private double calcDiffusionForCell(Coordinates cell){
+        double baseFactor = 0.05;
+        return baseFactor*allCells.getCell(cell).getValue()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getLastNumberParticles();
+    }
+
+    private void particleFlowFromTo(Coordinates source, Coordinates target, double amount){
+        allCells.getCell(source).getAsFluidCell().addToAbsoluteNumberParticles(-amount, allCells.getCell(target).getLastValue());
+        allCells.getCell(target).getAsFluidCell().addToAbsoluteNumberParticles(amount, allCells.getCell(source).getLastValue());
+    }
+
+     private double calcConvectionForCell(Coordinates coordinates){
+        double baseFactor = 0.05;
+        baseFactor *= (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()));
+        baseFactor *= this.allCells.getCell(coordinates).getAlpha()*this.allCells.getCell(coordinates).getAsFluidCell().getLastNumberParticles();
+
+        return baseFactor;
+    }
+
+
+    private double getMeanValueForAreaAndLayer(Coordinates coords, FluidCell cell){
+        if(coords.y == cell.getArea().getMinY()){
+            return (cell.getArea().getMeanValueForY(coords.y) + cell.getArea().getMeanValueForY(coords.y +1))/2;
+        }
+        if(coords.y == cell.getArea().getMaxY()){
+            return (cell.getArea().getMeanValueForY(coords.y) + cell.getArea().getMeanValueForY(coords.y -1))/2;
+        }
+        return (cell.getArea().getMeanValueForY(coords.y) + cell.getArea().getMeanValueForY(coords.y -1) + cell.getArea().getMeanValueForY(coords.y +1))/3;
+     }
+
+
 /*
     private void createCalculationThreads(){
         this.createCalculationThreads(this.numberThreads);
@@ -188,14 +369,7 @@ public class Space {
    // }
 
 /*
-    private void calcNewValueForSolidCell(int x, int y, int z){
-        this.cells[x][y][z].setValue(this.getCell(x,y,z).getValue() + calcSolidTemperatureFlowFromCellAToCellB(this.getCell(x,y,z),this.getCell(x-1,y,z))
-                + calcSolidTemperatureFlowFromCellAToCellB(this.getCell(x,y,z),this.getCell(x+1,y,z))
-                + calcSolidTemperatureFlowFromCellAToCellB(this.getCell(x,y,z),this.getCell(x,y-1,z))
-                + calcSolidTemperatureFlowFromCellAToCellB(this.getCell(x,y,z),this.getCell(x,y+1,z))
-                + calcSolidTemperatureFlowFromCellAToCellB(this.getCell(x,y,z),this.getCell(x,y,z-1))
-                + calcSolidTemperatureFlowFromCellAToCellB(this.getCell(x,y,z),this.getCell(x,y,z+1)));
-    }
+
 
     private void calcNewValueForFluidCell() {
         this.fluidEquations.solve(this.cells);

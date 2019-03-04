@@ -3,16 +3,20 @@ package Cells;
 import com.google.gson.JsonObject;
 
 import java.awt.*;
+import java.io.Serializable;
 
-public class Material {
+public class Material implements Serializable {
     public String name;
     public Color color;
-    public double alpha;
-    public double viskosity;
+    private double heatCapacity;
+    private double heatConductivity;
+    private double alpha;
+    private double viskosity;
+    private double nusselt;
     public String type;
 
-    public Material(String name, String type, String color, double value){
-        init(name, type, color, value);
+    public Material(String name, String type, String color, double heatCapacity, double heatConvectivity, double viskosity, double nusselt){
+        init(name, type, color, heatCapacity, heatConvectivity, viskosity, nusselt);
     }
 
     public boolean isFluid(){
@@ -24,29 +28,44 @@ public class Material {
     }
 
     public Material(JsonObject json){
-        if (json.has("alpha")) {
+        if (json.has("viskosity")) {
             init(json.get("name").getAsString(),
-                    "solid",
+                    "fluid",
                     json.get("color").getAsString(),
-                    json.get("alpha").getAsDouble());
+                    json.get("heatCapacity").getAsDouble(),
+                    json.get("heatConductivity").getAsDouble(),
+                    json.get("viskosity").getAsDouble(),
+                    json.get("nusselt").getAsDouble());
         }else {
             init(json.get("name").getAsString(),
                     "solid",
                     json.get("color").getAsString(),
-                    json.get("viskosity").getAsDouble());
+                    json.get("heatCapacity").getAsDouble(),
+                    json.get("heatConductivity").getAsDouble(),
+                    0,0);
         }
     }
 
-    private void init(String name, String type, String color, double value){
+    public double getHeatCapacity(){
+        return this.heatCapacity;
+    }
+
+    private void init(String name, String type, String color, double heatCapacity, double heatConductivity, double viskosity, double nusselt){
         this.name=name;
         this.type = type;
         if (this.type.toLowerCase().contains("fluid")){
-            this.viskosity=value;
-            this.alpha = 0;
+            this.viskosity=viskosity;
+            this.heatCapacity=heatCapacity;
+            this.heatConductivity=heatConductivity;
+            this.nusselt = nusselt;
+            this.alpha = heatConductivity/heatCapacity;
         }
         if (this.type.toLowerCase().contains("solid")){
-            this.alpha=value;
-            this.viskosity = 0;
+            this.viskosity=0;
+            this.heatCapacity=heatCapacity;
+            this.heatConductivity=heatConductivity;
+            this.nusselt = 0;
+            this.alpha = heatConductivity/heatCapacity;
         }
         try {
             setColorFromHexString(color);
@@ -68,4 +87,19 @@ public class Material {
                 Integer.valueOf(hexCode.substring(4, 6), 16));
     }
 
+    public double getheatConductivity() {
+        return heatConductivity;
+    }
+
+    public double getAlpha() {
+        return alpha;
+    }
+
+    public double getViskosity() {
+        return viskosity;
+    }
+
+    public double getNusselt() {
+        return nusselt;
+    }
 }

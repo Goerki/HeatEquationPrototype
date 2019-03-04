@@ -1,14 +1,16 @@
 package Cells;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-public class Coordinates {
+public class Coordinates implements Serializable {
     public int x;
     public int y;
     public int z;
 
-    Coordinates(int x, int y, int z){
+    public Coordinates(int x, int y, int z){
         this.x = x;
         this.y = y;
         this.z = z;
@@ -67,6 +69,7 @@ public class Coordinates {
         }
     }
 
+
     private static int getGreatInt(int int1, int int2){
         if (int1 < int2){
             return int2;
@@ -99,7 +102,7 @@ public class Coordinates {
        }
 
     public String toString(){
-        return "x: " + this.x + " y: " + this.y + " z: " + this.z + " dim: " + "\n";
+        return "x: " + this.x + " y: " + this.y + " z: " + this.z;
     }
 
     public static List<Coordinates> getAllCoordinates(int sizeX, int sizeY, int sizeZ){
@@ -115,16 +118,6 @@ public class Coordinates {
         return result;
     }
 
-    public boolean equals(Coordinates coord1){
-        if (coord1.x ==this.x){
-            if (coord1.y == this.y){
-                if (coord1.z == this.z){
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
 
     public static boolean equals(Coordinates coord1, Coordinates coord2){
@@ -138,4 +131,7 @@ public class Coordinates {
         return false;
     }
 
-  }
+public boolean equals(Coordinates coordinates){
+        return coordinates.x == this.x && this.y == coordinates.y && coordinates.z == this.z;
+}
+}

@@ -8,8 +8,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListDataListener;
 import java.awt.event.*;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -34,19 +33,29 @@ public class ConstructionWindow extends JDialog {
     private JTextField textField1Y;
     private JComboBox solidMaterialSelection;
     private JCheckBox fixedTemperatureCheckBox;
-    private JTextField textField4;
     private JTextField textField2X;
     private JTextField textField2Z;
     private JTextField textField2Y;
     private JPanel consolePanel;
     private JPanel tablePanel;
-    private JTextField alphaTextField;
+    private JTextField solidHeatCapacityTextField;
     private JPanel layerSelectionPanel;
     private JTextPane currentLayerSelectionTextPane;
     private JComboBox fluidMaterialSelection;
     private JTextField viskosityTextField;
-    private JButton fluidGenerateButton;
-    private JButton boundaryGenerateButton;
+    private JPanel consolePane;
+    private JTextPane consoleTextField;
+    private JTextField heatFlowText;
+    private JCheckBox heatFlowCheckbox;
+    private JPanel heatCapacity;
+    private JPanel heatConductivity;
+    private JTextField fluidHeatCapacityTextField;
+    private JTextField fluidHeatConductivityTextField;
+    private JTextField nusseltTextField;
+    private JTextField solidHeatConductivity;
+    private JTextField startingTemperatureField;
+    private JCheckBox startingTemperatureCheckbox;
+    private JTextField fixedTemperatureField;
     public Space space;
 
     private void newArea(){
@@ -67,18 +76,40 @@ getRootPane().disable();
         errorWindow.setVisible(true);
     }
 
-    public ConstructionWindow(int sizex, int sizey, int sizez) {
+    private void praeInit(){
         setContentPane(contentPane);
         setModal(true);
-        getRootPane().setDefaultButton(buttonOK);
         getMaterialsFromJsonFile();
         selectedMaterial = solidMaterials.get(0);
         createSolidMaterialSelection();
         createFluidMaterialSelection();
-        this.space=new Space(sizex,sizey,sizez,100,selectedMaterial,4);
+
+    }
+
+    public ConstructionWindow(Space space){
+        praeInit();
+        this.space=space;
+        if(space != null){
+            int numberCells = space.sizeX * space.sizeY * space.sizeZ;
+            this.showTextOnConsole("space with " + numberCells+ " cells loaded.   " + space.sizeX + " x " + space.sizeY + " x "+ space.sizeZ);
+        }
+        init(space);
+    }
 
 
 
+    public ConstructionWindow(int sizex, int sizey, int sizez, double startTemperature) {
+        praeInit();
+        this.space = new Space(sizex, sizey, sizez, startTemperature, solidMaterials.get(0), 4);
+        if(this.space != null){
+            int numberCells = space.sizeX * space.sizeY * space.sizeZ;
+            this.showTextOnConsole("new space with " + numberCells+ " cells created.   " + space.sizeX + " x " + space.sizeY + " x "+ space.sizeZ);
+        }
+        init(space);
+    }
+
+    private void init(Space space){
+        this.generationSelecter.setSelectedIndex(0);
 
         buttonCancel.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -98,7 +129,12 @@ getRootPane().disable();
             }
         });
 
-
+        buttonOK.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                onOkay();
+            }
+        });
 
         newTable();
         drawTable();
@@ -128,6 +164,81 @@ getRootPane().disable();
             }
         }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
+        saveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                onSave();
+            }
+        });
+
+        generationSelecter.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                generationSelecterChanged();
+                newTable();
+                drawTable();
+
+
+            }
+        });
+    }
+
+    private void generationSelecterChanged(){
+        if (generationSelecter.getSelectedIndex() == 0){
+            this.solidMaterialSelection.setSelectedIndex(0);
+            this.selectedMaterial=solidMaterials.get(0);
+            changeSolidMaterials();
+            }
+        if (generationSelecter.getSelectedIndex() == 1){
+            this.fluidMaterialSelection.setSelectedIndex(0);
+            this.selectedMaterial=fluidMaterials.get(0);
+            changeFluidMaterials();
+        }
+    }
+
+    private void onOkay(){
+        NewCalculationConfigurationWindow calcWindow = new NewCalculationConfigurationWindow(this.space);
+        calcWindow.pack();
+        calcWindow.show();
+        //TODO: Create calculation window
+        CalculationProgressWindow progressWindow= new CalculationProgressWindow(this.space);
+        progressWindow.pack();
+
+        SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() throws Exception {
+                Boolean res = progressWindow.calculate();
+                progressWindow.dispose();
+                return res;
+            }
+
+        };
+        /*
+        SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
+            @Override
+            public Boolean doInBackground() throws InterruptedException{
+            return progressWindow.calculate();
+        }
+        @Override
+        protected void done() {
+            calcWindow.dispose();
+        }
+    };
+*/
+        ((SwingWorker<Boolean, Void>) worker).execute();
+        progressWindow.show();
+
+
+        this.setVisible(false);
+        this.getRootPane().setVisible(false);
+        ShowSpaceDialog nextWindow = new ShowSpaceDialog(space);
+        nextWindow.pack();
+        nextWindow.show();
+
+    }
+
+    private void showTextOnConsole(String text){
+        this.consoleTextField.setText(text);
     }
 
     private void newAxisSelection(String newAxis){
@@ -157,15 +268,9 @@ getRootPane().disable();
     private void onCancel() {
         // add your code here if necessary
         dispose();
-    }
-
-    public static void main(String[] args) {
-        ConstructionWindow dialog = new ConstructionWindow(10, 10, 10);
-        dialog.pack();
-
-        dialog.setVisible(true);
         System.exit(0);
     }
+
 
     private void createUIComponents() {
         // TODO: place custom component creation code here
@@ -174,20 +279,58 @@ getRootPane().disable();
     private boolean validGernerateInput(){
         return true;
     }
-    private void onGenerate(){
-        if (validGernerateInput()){
-            space.createCube(Integer.valueOf(textField1X.getText()),
-                    Integer.valueOf(textField1Y.getText()),
-                    Integer.valueOf(textField1Z.getText()),
-                    Integer.valueOf(textField2X.getText()),
-                    Integer.valueOf(textField2Y.getText()),
-                    Integer.valueOf(textField2Z.getText()),
-                    selectedMaterial);
+
+    private boolean boundariesSelected(){
+        if (this.generationSelecter.getSelectedIndex() == 2){
+            return true;
+        }else{
+            return false;
         }
 
-               updateTable();
-        drawTable();
+    }
+    private void onGenerate(){
+        try {
+            if (boundariesSelected()) {
+                if (validGernerateInput()) {
+                    Double heatFlow = -1.;
+                    Double fixedTemperature = -1.;
+                    Double startingTemperature = -1.;
 
+
+                    if (this.heatFlowCheckbox.isSelected()) {
+                        heatFlow = Double.valueOf(this.heatFlowText.getText());
+                    }
+                    if (this.fixedTemperatureCheckBox.isSelected()) {
+                        fixedTemperature = Double.valueOf(this.fixedTemperatureField.getText());
+                    }
+                    if (this.startingTemperatureCheckbox.isSelected()) {
+                        startingTemperature = Double.valueOf(this.startingTemperatureField.getText());
+                    }
+
+                    this.showTextOnConsole(space.setBoundariesForCube(Integer.valueOf(textField1X.getText()),
+                            Integer.valueOf(textField1Y.getText()),
+                            Integer.valueOf(textField1Z.getText()),
+                            Integer.valueOf(textField2X.getText()),
+                            Integer.valueOf(textField2Y.getText()),
+                            Integer.valueOf(textField2Z.getText()),
+                            fixedTemperature, heatFlow, startingTemperature));
+                   }
+                } else {
+                    if (validGernerateInput()) {
+                        this.showTextOnConsole(space.createCube(Integer.valueOf(textField1X.getText()),
+                                Integer.valueOf(textField1Y.getText()),
+                                Integer.valueOf(textField1Z.getText()),
+                                Integer.valueOf(textField2X.getText()),
+                                Integer.valueOf(textField2Y.getText()),
+                                Integer.valueOf(textField2Z.getText()),
+                                selectedMaterial));
+                    }
+                }
+            updateTable();
+            drawTable();
+        }catch (NumberFormatException e){
+            this.showTextOnConsole("Wrong number format - please check input");
+        }
     }
 
     private void newTable(){
@@ -195,12 +338,22 @@ getRootPane().disable();
         if (drawingTable != null) {
             tablePanel.remove(drawingTable);
         }
-        this.drawingTable = new DrawingTable(space.allCells, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(),"mat");
-        this.tablePanel.add(this.drawingTable);
+        if (generationSelecter.getSelectedIndex() == 2){
+            this.drawingTable = new DrawingTable(space.allCells, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat", consoleTextField);
+            this.tablePanel.add(this.drawingTable);
+        } else {
+            this.drawingTable = new DrawingTable(space.allCells, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "mat", consoleTextField);
+            this.tablePanel.add(this.drawingTable);
+        }
     }
 
     private void updateTable(){
-        this.drawingTable.updateTable(axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(),"mat");
+        if (boundariesSelected()){
+            this.drawingTable.setMinAndMaxValues(space.getMinimumTemperature(), space.getMaximumTemperature());
+            this.drawingTable.updateTable(axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat");
+        }else {
+            this.drawingTable.updateTable(axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "mat");
+        }
         tablePanel.updateUI();
         drawingTable.updateUI();
     }
@@ -225,7 +378,7 @@ getRootPane().disable();
             @Override
             public void setSelectedItem(Object anItem) {
                 selectedMaterial = getMaterialByName(anItem.toString());
-                changeAlphaValue(selectedMaterial.alpha);
+                changeSolidMaterials();
             }
 
             @Override
@@ -256,13 +409,12 @@ getRootPane().disable();
         });
     }
 
-
     private void createFluidMaterialSelection(){
         this.fluidMaterialSelection.setModel(new ComboBoxModel() {
             @Override
             public void setSelectedItem(Object anItem) {
                 selectedMaterial = getMaterialByName(anItem.toString());
-                changeViskosityValue(selectedMaterial.viskosity);
+                changeFluidMaterials();
             }
 
             @Override
@@ -292,15 +444,19 @@ getRootPane().disable();
         });
     }
 
-    private void changeAlphaValue(Double newValue){
-        this.alphaTextField.setText(newValue.toString());
-        this.alphaTextField.updateUI();
+    private void changeSolidMaterials(){
+        this.solidHeatCapacityTextField.setText(String.valueOf(selectedMaterial.getHeatCapacity()));
+        this.solidHeatConductivity.setText(String.valueOf(selectedMaterial.getheatConductivity()));
     }
 
-    private void changeViskosityValue(Double newValue){
-        this.viskosityTextField.setText(newValue.toString());
-        this.viskosityTextField.updateUI();
+    private void changeFluidMaterials(){
+        this.fluidHeatCapacityTextField.setText(String.valueOf(selectedMaterial.getHeatCapacity()));
+        this.fluidHeatConductivityTextField.setText(String.valueOf(selectedMaterial.getheatConductivity()));
+        this.viskosityTextField.setText(String.valueOf(selectedMaterial.getViskosity()));
+        this.nusseltTextField.setText(String.valueOf(selectedMaterial.getNusselt()));
     }
+
+
 
     private void getMaterialsFromJsonFile(){
         try {
@@ -326,11 +482,31 @@ getRootPane().disable();
                 this.fluidMaterials.add(new Material(fluidMaterials.get(fluidIncrement).getAsJsonObject()));
             }
 
-            System.out.print("whatever...");
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
+    private void onSave(){
+        File saveFile = (new FileExplorer().openSaveDialogAndGetChosenFile());
+        if(saveFile==null){
+            return;
+        }
+        this.saveSpaceToFile(saveFile);
+    }
+
+    private void saveSpaceToFile(File savefile){
+        FileOutputStream fileOut = null;
+        try {
+            fileOut = new FileOutputStream(savefile);
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(this.space);
+            objectOut.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 

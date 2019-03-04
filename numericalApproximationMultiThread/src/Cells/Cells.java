@@ -1,16 +1,19 @@
 package Cells;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Cells {
+public class Cells implements Serializable {
     Cell[][][] cells;
     public int sizeX;
     public int sizeY;
     public int sizeZ;
     List<Coordinates> coords;
     List<Coordinates> cellsForSolidCalculation;
+    public static double gasConstant = 0.0001;
+    public static double cellSize = 1;
 
     public Cells(int size, double value, Material material){
         this.sizeX = size;
@@ -34,7 +37,11 @@ public class Cells {
      private void initAllCells(double value, Material material){
         for (Coordinates tempCoord: this.coords){
             try {
-                this.makeSingleFluidCell(tempCoord,value, material );
+                if (material.isFluid()) {
+                    this.makeSingleFluidCell(tempCoord, value, material);
+                } else {
+                    this.makeNewSolidCell(tempCoord,value,material);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -51,6 +58,101 @@ public class Cells {
         }
         return false;
      }
+
+    public String setBoundariesForCube(int x1, int y1, int z1, int x2, int y2, int z2, Double constantTemperature, Double heatFlow, Double startingTemperature){
+        return this.setBoundariesForCube(new Coordinates(x1,y1,z1), new Coordinates(x2,y2,z2), constantTemperature, heatFlow, startingTemperature);
+
+    }
+
+    public List<Coordinates> getAllCoordinates(){
+        List<Coordinates> result = new ArrayList<Coordinates>();
+        for(int x =0; x< sizeX;x++){
+            for(int y =0; y< sizeY;y++){
+                for(int z =0;z< sizeZ;z++){
+                    result.add(new Coordinates(x,y,z));
+
+                }
+            }
+        }
+        return result;
+    }
+
+    public List<Cell> getAllCells(){
+        List<Cell> result = new ArrayList<Cell>();
+        for(int x =0; x< sizeX;x++){
+            for(int y =0; y< sizeY;y++){
+                for(int z =0;z< sizeZ;z++){
+                    result.add(getCell(x,y,z));
+                }
+            }
+        }
+        return result;
+    }
+
+    public double getMaximumTemperature(){
+        double maxValue = -1;
+        for(Cell cell:this.getAllCells()){
+            if (cell.getValue() >maxValue){
+                maxValue=cell.getValue();
+            }
+        }
+        return maxValue;
+    }
+
+    public double getMinimumTemperature(){
+        double minValue = 1000;
+        for(Cell cell:this.getAllCells()){
+            if (cell.getValue() <minValue){
+                minValue=cell.getValue();
+            }
+        }
+        return minValue;
+    }
+
+
+    public String setBoundariesForCube(Coordinates coords1, Coordinates coords2, Double constantTemperature, Double heatFlow, Double startinTemperature){
+        int counter = 0;
+        int tempCounter = 0;
+        for(Coordinates coord:Coordinates.getCoordsbetween(coords1, coords2)){
+            try {
+                if (this.cellExists(coord)) {
+                    if (startinTemperature>=0) {
+                        this.getCell(coord).setValue(startinTemperature);
+                        this.getCell(coord).setOldValue();
+                        tempCounter++;
+                    }
+                    if (this.getCell(coord).isSolid()) {
+                        this.getCell(coord).setConstantTemperature(constantTemperature);
+                        this.getCell(coord).setHeatFlow(heatFlow);
+                        counter++;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.print("info: Cordinate " + coords + " not found in cells. " + e.toString());
+            }
+        }
+        if (counter >0){
+            String result = "added ";
+            if (heatFlow >= 0){
+                result += "heat flow " + heatFlow;
+            }
+            if (constantTemperature >=0){
+                if (result.length() >10) {
+                    result += " and ";
+                }
+                result += "constant temperature " + constantTemperature;
+            }
+            result+= " to " + counter + " cells";
+            return result;
+        } else if(tempCounter > 0){
+            return "temperature " + startinTemperature + " set to " + tempCounter + " cells";
+
+        } else {
+            return "No boundary conditions set - they can only be set for solid cells";
+        }
+
+    }
 
      public List<Coordinates> getAllAdjacentCells(Coordinates centerCell){
         List<Coordinates> result = new ArrayList<>();
@@ -94,6 +196,7 @@ public class Cells {
     }
 
      public List<Coordinates> getCellsForSolidCalculation(){
+        this.cellsForSolidCalculation=new ArrayList<Coordinates>();
         for (Coordinates coord:this.coords){
             if (this.getCell(coord).isSolid()){
                 this.cellsForSolidCalculation.add(coord);
@@ -101,6 +204,7 @@ public class Cells {
             else if (this.getCell((coord)).isFluid){
                 if (this.cellIsFluidRandCell(coord)){
                     this.cellsForSolidCalculation.add(coord);
+                    this.getCell(coord).setForSolidCalculation(true);
                 }
             }
         }
@@ -108,8 +212,95 @@ public class Cells {
      }
 
 
+   /* public List<Coordinates> getAllAdjacentCellsForSolidCalculation(Coordinates centerFluidCell){
 
-     public List<Coordinates> getAllAdjacentFluidCells(Coordinates centerFluidCell){
+        List<Coordinates> result = new ArrayList<>();
+        if(this.cellExists(centerFluidCell.getCellXMinus1()) && this.getCell(centerFluidCell.getCellXMinus1()).isForSolidCalculation()){
+            result.add(centerFluidCell.getCellXMinus1());
+        }
+        if(this.cellExists(centerFluidCell.getCellYMinus1())&& this.getCell(centerFluidCell.getCellYMinus1()).isForSolidCalculation){
+            result.add(centerFluidCell.getCellYMinus1());
+        }
+        if(this.cellExists(centerFluidCell.getCellZMinus1())&& this.getCell(centerFluidCell.getCellZMinus1()).isForSolidCalculation){
+            result.add(centerFluidCell.getCellZMinus1());
+        }
+        if(this.cellExists(centerFluidCell.getCellXPlus1())&& this.getCell(centerFluidCell.getCellXPlus1()).isForSolidCalculation){
+            result.add(centerFluidCell.getCellXPlus1());
+        }
+        if(this.cellExists(centerFluidCell.getCellYPlus1())&& this.getCell(centerFluidCell.getCellYPlus1()).isForSolidCalculation){
+            result.add(centerFluidCell.getCellYPlus1());
+        }
+        if(this.cellExists(centerFluidCell.getCellZPlus1())&& this.getCell(centerFluidCell.getCellZPlus1()).isForSolidCalculation){
+            result.add(centerFluidCell.getCellZPlus1());
+        }
+        return result;
+    }
+    */
+
+    public List<Coordinates> getAllAdjacentCellsForSolidCalculation(Coordinates centerFluidCell){
+
+        List<Coordinates> result = new ArrayList<>();
+        if (this.getCell(centerFluidCell).isSolid()) {
+            if (this.cellExists(centerFluidCell.getCellXMinus1())) {
+                result.add(centerFluidCell.getCellXMinus1());
+            }
+            if (this.cellExists(centerFluidCell.getCellYMinus1())) {
+                result.add(centerFluidCell.getCellYMinus1());
+            }
+            if (this.cellExists(centerFluidCell.getCellZMinus1())) {
+                result.add(centerFluidCell.getCellZMinus1());
+            }
+            if (this.cellExists(centerFluidCell.getCellXPlus1())) {
+                result.add(centerFluidCell.getCellXPlus1());
+            }
+            if (this.cellExists(centerFluidCell.getCellYPlus1())) {
+                result.add(centerFluidCell.getCellYPlus1());
+            }
+            if (this.cellExists(centerFluidCell.getCellZPlus1())) {
+                result.add(centerFluidCell.getCellZPlus1());
+            }
+        } else {
+            if(this.cellExists(centerFluidCell.getCellXMinus1()) && this.getCell(centerFluidCell.getCellXMinus1()).isSolid()){
+                result.add(centerFluidCell.getCellXMinus1());
+            }
+            if(this.cellExists(centerFluidCell.getCellYMinus1())&& this.getCell(centerFluidCell.getCellYMinus1()).isSolid()){
+                result.add(centerFluidCell.getCellYMinus1());
+            }
+            if(this.cellExists(centerFluidCell.getCellZMinus1())&& this.getCell(centerFluidCell.getCellZMinus1()).isSolid()){
+                result.add(centerFluidCell.getCellZMinus1());
+            }
+            if(this.cellExists(centerFluidCell.getCellXPlus1())&& this.getCell(centerFluidCell.getCellXPlus1()).isSolid()){
+                result.add(centerFluidCell.getCellXPlus1());
+            }
+            if(this.cellExists(centerFluidCell.getCellYPlus1())&& this.getCell(centerFluidCell.getCellYPlus1()).isSolid()){
+                result.add(centerFluidCell.getCellYPlus1());
+            }
+            if(this.cellExists(centerFluidCell.getCellZPlus1())&& this.getCell(centerFluidCell.getCellZPlus1()).isSolid()){
+                result.add(centerFluidCell.getCellZPlus1());
+            }
+        }
+        return result;
+    }
+
+    public List<Coordinates> getAllFluidCells(){
+        List<Coordinates> allFluidCells=new ArrayList<Coordinates>();
+        for (Coordinates coord:this.coords){
+            if (this.getCell(coord).isFluid()){
+                allFluidCells.add(coord);
+            }
+         }
+        return allFluidCells;
+    }
+
+    public double getMeanLastValueFor(List<Coordinates> cellsForCalculation){
+        double result =0;
+        for(Coordinates singleCell: cellsForCalculation){
+            result += this.getCell(singleCell).getLastValue();
+        }
+        return result/cellsForCalculation.size();
+    }
+
+    public List<Coordinates> getAllAdjacentFluidCells(Coordinates centerFluidCell){
 
          List<Coordinates> result = new ArrayList<>();
          if(this.cellExists(centerFluidCell.getCellXMinus1()) && this.getCell(centerFluidCell.getCellXMinus1()).isFluid){
@@ -157,6 +348,16 @@ public class Cells {
         return result;
     }
 
+    public void updateAllOldValues(){
+        for(int x=0; x < sizeX ;x++){
+            for(int y=0; y < sizeY ;y++){
+                for(int z=0; z < sizeZ ;z++){
+                    cells[x][y][z].setOldValue();
+                }
+            }
+        }
+    }
+
     private void initCoords(){
         coords = new ArrayList<Coordinates>();
         for (int z =0; z< this.sizeZ; z++){
@@ -168,24 +369,55 @@ public class Cells {
         }
     }
 
+    public void createVirtualBorderCells(List<Coordinates> area, double temp){
+        for(Coordinates coord:area){
+            int border =0;
+            if (coord.x == 0 || coord.x == sizeX-1){
+                border ++;
+            }
+            if (coord.y == 0 || coord.y == sizeY-1){
+                border ++;
+            }
+            if (coord.z == 0 || coord.z == sizeZ-1){
+                border ++;
+
+            }
+            this.getCell(coord).getAsFluidCell().setBorderCell(border, temp);
+
+            if (coord.y == 0 || coord.y == sizeY-1){
+                this.getCell(coord).getAsFluidCell().setBorderCellOnTop();
+            }
+        }
+
+    }
+
     public void setCellsToInitialized(List<Coordinates> list){
         for (Coordinates tempCoord: list){
             this.getCell(tempCoord).isInitialized = true;
         }
     }
 
-    public void makeCubeFluidCells(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
-        this.makeCubeFluidCells(new Coordinates(x1,y1,z1), new Coordinates(x2,y2,z2), material);
+    public String makeCubeFluidCells(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
+        return this.makeCubeFluidCells(new Coordinates(x1,y1,z1), new Coordinates(x2,y2,z2), material);
     }
 
-    public void makeCubeFluidCells(Coordinates chord1, Coordinates chord2, Material material){
+    public String makeCubeFluidCells(Coordinates chord1, Coordinates chord2, Material material){
+        int counter = 0;
         for(Coordinates coords:Coordinates.getCoordsbetween(chord1, chord2)){
             try {
-                this.makeSingleFluidCell(coords, this.getCell(coords).value , material);
+                if (this.cellExists(coords)) {
+                    this.makeSingleFluidCell(coords, this.getCell(coords).getValue(), material);
+                    counter++;
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.print("info: Cordinate " + coords + " not found in cells. " + e.toString());
             }
+        }
+        if (counter > 0){
+            return counter + " cells set to " + material.name;
+        } else {
+            return "no cells found";
         }
     }
 
@@ -194,42 +426,60 @@ public class Cells {
     }
 
     public void makeSingleFluidCell(int x, int y, int z,double value, Material material) throws Exception{
-        this.cells[x][y][z]= new FluidCell(value, material);
+        this.cells[x][y][z]= new FluidCell(value, material, 1);
     }
 
-    public void makeCubeSolidCells(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
-        this.makeCubeSolidCells(new Coordinates(x1,y1,z1), new Coordinates(x2,y2,z2),material);
+    public String makeCubeSolidCells(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
+        return this.makeCubeSolidCells(new Coordinates(x1,y1,z1), new Coordinates(x2,y2,z2), material);
 
     }
 
-    public void makeCubeSolidCells(Coordinates chord1, Coordinates chord2, Material material){
+    public String makeCubeSolidCells(Coordinates chord1, Coordinates chord2, Material material){
+        int counter = 0;
         for(Coordinates coords:Coordinates.getCoordsbetween(chord1, chord2)){
             try {
                 this.makeSingleSolidCell(coords, material);
+                counter++;
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.print("info: Cordinate " + coords + " not found in cells. " + e.toString());
             }
         }
+        if (counter > 0){
+            return counter + " cells set to " + material.name;
+        } else {
+            return "no cells found";
+        }
     }
 
-    public void makeSingleSolidCell(int x, int y, int z,double alpha, Material material) throws Exception{
-        this.cells[x][y][z]= new SolidCell(material);
+    public void makeSingleSolidCell(int x, int y, int z, Material material) throws Exception{
+        makeSingleSolidCell(new Coordinates(x,y,z), material);
+    }
+
+    private void makeNewSolidCell(Coordinates coord, double value, Material material){
+        this.cells[coord.x][coord.y][coord.z] = new SolidCell(material,value);
+
     }
     public void makeSingleSolidCell(Coordinates coord, Material material) throws Exception{
         if (coord.x >= sizeX || coord.y >= sizeY || coord.z >= sizeZ){
             return;
         }
         System.out.print("\nnew solid cell: " + coord.x + coord.y+ coord.z);
-        this.cells[coord.x][coord.y][coord.z]= new SolidCell(material);
+        if(this.cells[coord.x][coord.y][coord.z].isSolid()){
+            this.cells[coord.x][coord.y][coord.z].material = material;
+        }else {
+            this.cells[coord.x][coord.y][coord.z] = new SolidCell(material,this.cells[coord.x][coord.y][coord.z].getValue());
+        }
     }
 
     public Cell getCell(int x, int y, int z){
         return this.cells[x][y][z];
     }
 
+
+
     public Cell getCell(Coordinates tempCoords){
-        return this.cells[tempCoords.x][tempCoords.y][tempCoords.z];
+         return this.cells[tempCoords.x][tempCoords.y][tempCoords.z];
     }
 
     public Cell[][] getCellsForLayer(String layer, int value){
@@ -255,7 +505,7 @@ public class Cells {
             Cell[][] result = new Cell[sizeX][sizeY];
             for (int x=0; x<sizeX;x++){
                 for (int y=0;y<sizeY;y++){
-                    result[x][y]=cells[x][y][value];
+                    result[y][x]=cells[x][y][value];
                 }
             }
             return result;

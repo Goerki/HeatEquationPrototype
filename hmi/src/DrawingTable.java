@@ -13,9 +13,10 @@ public class DrawingTable extends JTable {
     int layer;
     Cell[][] drawingCells;
     CustomRenderer tableRenderer;
+    JTextPane console;
 
 
-    public DrawingTable(Cells cells, String axis, int layer, String type){
+    public DrawingTable(Cells cells, String axis, int layer, String type, JTextPane console){
         this.axis=axis;
         this.type = type;
         this.layer = layer;
@@ -23,9 +24,17 @@ public class DrawingTable extends JTable {
         setRowAndColumnsSize();
         this.setModel(new CustomTableModel(this.numberColumns, this.numberRows));
         setCells(layer);
-        tableRenderer = new CustomRenderer(this.numberRows,this.numberColumns);
+        tableRenderer = new CustomRenderer(this.numberRows,this.numberColumns, console);
+        this.console = console;
+        tableRenderer.setMaxTemp(cells.getMaximumTemperature());
+        tableRenderer.setMinTemp(cells.getMinimumTemperature());
         tableRenderer.setColors(drawingCells,type);
         setTableRenderer();
+    }
+
+    public void setMinAndMaxValues(double minValue, double maxValue){
+        tableRenderer.setMinTemp(minValue);
+        tableRenderer.setMaxTemp(maxValue);
     }
 
     public void updateTable(String axis, int layer, String type){
@@ -33,7 +42,10 @@ public class DrawingTable extends JTable {
             this.axis = axis;
             setRowAndColumnsSize();
             this.setModel(new CustomTableModel(this.numberColumns, this.numberRows));
-            tableRenderer = new CustomRenderer(this.numberRows, this.numberColumns);
+            tableRenderer = new CustomRenderer(this.numberRows, this.numberColumns, this.console);
+            tableRenderer.setMaxTemp(cells.getMaximumTemperature());
+            tableRenderer.setMinTemp(cells.getMinimumTemperature());
+
         }
         this.layer=layer;
         setCells(layer);

@@ -2,31 +2,37 @@
   "SolidMaterials":[
     {
       "name":"iron",
-      "alpha":"100",
+      "heatCapacity":"3500",
+      "heatConductivity":"8000",
       "color":"D7D7D7"
     },
     {
-      "name":"copper",
-      "alpha":"120",
+      "name":"gold",
+      "heatCapacity":"2509",
+      "heatConductivity":"32000",
       "color":"DBA372"
     },
     {
       "name":"concrete",
-      "alpha":"50",
+      "heatCapacity":"100",
+      "heatConductivity":"100",
       "color":"C2C2C2"
     },
     {
       "name":"wood",
-      "alpha":"20",
+      "heatCapacity":"100",
+      "heatConductivity":"100",
       "color":"A16614"
     }
   ],
   "FluidMaterials":[
     {
       "name":"air",
-      "viskosity":"100",
+      "heatCapacity":"1",
+      "heatConductivity":"0.0012",
+      "viskosity":"0.1",
+      "nusselt":"3",
       "color":"DFFFFF"
     }
-
   ]
 }

@@ -1,18 +1,21 @@
 package Cells;
 
-public class SolidCell extends Cell {
+import java.io.Serializable;
+
+public class SolidCell extends Cell implements Serializable {
 
 
 
-    public SolidCell(Material material) {
+    public SolidCell(Material material, double value) {
         this.value = value;
         this.oldValue = value;
-        this.norm = material.alpha;
+        this.alpha = material.getAlpha();
         this.isFluid = false;
         this.material = material;
-
-
+        super.constantTemperature = -1;
+        super.isForSolidCalculation = true;
     }
+
 
 
     public boolean isSolid(){
@@ -22,5 +25,10 @@ public class SolidCell extends Cell {
     public boolean isFluid(){
         return false;
     }
+
+    public String toString(){
+        return "Solid cell - T = " + this.value;
+    }
+
 
 }

@@ -5,10 +5,11 @@ public class NewAreaSizeWindow extends JDialog {
     private JPanel contentPane;
     private JButton buttonOK;
     private JButton buttonCancel;
-    private JTextPane sizeXTextPane;
     private JTextField sizeXField;
     private JTextField sizeYField;
     private JTextField sizeZField;
+    private JTextField startingTemperatureField;
+    private JTextField cellLengthField;
 
     public NewAreaSizeWindow() {
         setContentPane(contentPane);
@@ -49,10 +50,11 @@ public class NewAreaSizeWindow extends JDialog {
             if (Integer.valueOf(sizeXField.getText()) > 0) {
                 if (Integer.valueOf(sizeYField.getText()) > 0) {
                     if (Integer.valueOf(sizeZField.getText()) > 0) {
-                        return true;
+                        if (Integer.valueOf(startingTemperatureField.getText()) > 0) {
+                            return true;
+                        }
                     }
                 }
-
             }
             return false;
         }catch (Exception e){
@@ -77,7 +79,7 @@ public class NewAreaSizeWindow extends JDialog {
         if (this.validInput()) {
             dispose();
             ConstructionWindow nextWindow = new ConstructionWindow(Integer.valueOf(sizeXField.getText()),
-                    Integer.valueOf(sizeYField.getText()), Integer.valueOf(sizeZField.getText()));
+                    Integer.valueOf(sizeYField.getText()), Integer.valueOf(sizeZField.getText()), Integer.valueOf(startingTemperatureField.getText()));
             nextWindow.pack();
             nextWindow.setVisible(true);
 
