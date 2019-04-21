@@ -1,32 +1,98 @@
-package Cells;
+package Heatequation.Cells;
+
+import Heatequation.HeatequationLogger;
+import Heatequation.Space;
 
 import java.io.Serializable;
-import java.nio.charset.CoderResult;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class CellArea implements Serializable {
     private boolean isFluid;
-    public List<Coordinates> coords;
+    public List<Heatequation.Cells.Coordinates> coords;
     private List<List<Coordinates>> yLayers;
+    private List<Coordinates> borderCellsWithVirtualCells;
     private int minY;
     private int maxY;
     private double[] meanValues;
+    public double averageTermperature;
+    public double particleSum;
+    private double pressure;
+    private double normalization;
+    private boolean isIsochor;
+    private boolean isIsobar;
+    private HeatequationLogger logger;
 
-    public CellArea(Cells allCells, Coordinates startCell){
-        if (allCells.getCell(startCell).isFluid){
+
+
+    public CellArea(Space space, Coordinates startCell, HeatequationLogger logger){
+        if (space.allCells.getCell(startCell).isFluid){
             this.isFluid=true;
         } else {
             this.isFluid= false;
         }
-        initCoords(allCells, startCell);
+        initCoords(space.allCells, startCell);
         if (this.coords.size() == 0){
             return;
         }
+        this.logger = logger;
+        this.averageTermperature = -1;
+        this.particleSum = -1;
         this.minY = this.setMinY();
         this.maxY = this.setMaxY();
         this.meanValues= new double[maxY - minY];
         setYLayers();
+        this.setBorderCellsWithVirtualCells(space.allCells);
+        if (this.borderCellsWithVirtualCells.size()==0){
+            this.isIsobar = false;
+            this.isIsochor = true;
+            this.normalization = space.allCells.gasConstant / space.getCellLength()/space.getCellLength()/space.getCellLength()/this.coords.size();
+        } else {
+            this.isIsochor= false;
+            this.isIsobar = true;
+
+        }
+        this.calcPressure(space.allCells);
+
+    }
+
+    public void setAverageTemperature(Cells cells){
+        this.averageTermperature = 0;
+        for (Coordinates coords: this.coords){
+            this.averageTermperature += cells.getCell(coords).getAsFluidCell().getNumberParticles();
+        }
+
+    }
+
+    public void calcPressure(Cells space){
+        if (this.isIsobar){
+            this.pressure = space.getCell(this.borderCellsWithVirtualCells.get(0)).getAsFluidCell().getPressureOfBorderCell();
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "area is isobar. pressure set to " + this.pressure);
+        } else{
+            this.calcAverages(space);
+            this.pressure = this.particleSum*this.averageTermperature*this.normalization;
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "area is not isobar. pressure set to " + this.pressure +  " from particleSum " + this.particleSum + " average Temperature " + averageTermperature + " and normalization " + this.normalization);
+        }
+    }
+
+    public double getPressure() {
+        return this.pressure;
+    }
+
+    public int getNumberVirtualCells(){
+        return this.borderCellsWithVirtualCells.size();
+    }
+
+    private void setBorderCellsWithVirtualCells(Cells cells){
+        this.borderCellsWithVirtualCells= new ArrayList<>();
+        if(this.isFluid){
+            for(Coordinates coord : this.coords){
+                if(cells.getCell(coord).getAsFluidCell().isBorderCell()){
+                    this.borderCellsWithVirtualCells.add(coord);
+                }
+            }
+        }
     }
 
     public void setMeanValues(double[] values){
@@ -53,6 +119,8 @@ public class CellArea implements Serializable {
             yLayers.add(tempList);
         }
     }
+
+
 
 
 
@@ -162,4 +230,44 @@ public class CellArea implements Serializable {
             throw new Exception("corrdinates not found for index " + index + " in area " + this.coords.toString());
         }
     }
+
+    public int getListIndexForVirtualCell(Coordinates centerCoordinates) {
+        int virtualCellIndex = this.getIndexOfCoordinatesInVirtualBorderCellsList(centerCoordinates);
+        return virtualCellIndex+this.coords.size();
+    }
+
+    private int getIndexOfCoordinatesInVirtualBorderCellsList(Coordinates coordinates){
+        int i=0;
+        for(Coordinates listCoordinate: this.borderCellsWithVirtualCells){
+            if (listCoordinate.equals(coordinates)){
+                return i;
+            } else {
+                i ++;
+            }
+        }
+        return -1;
+    }
+
+    public boolean isBorderCell(Coordinates coordinates){
+        return this.borderCellsWithVirtualCells.contains(coordinates);
+    }
+
+    public List<Coordinates> getborderCellsWithVirtualCells(){
+        return this.borderCellsWithVirtualCells;
+    }
+
+    public void calcAverages(Cells cells) {
+        this.particleSum = 0;
+        this.averageTermperature = 0;
+        if(this.isFluid) {
+            for (Coordinates eachCoordinate : coords) {
+                this.particleSum +=  cells.getCell(eachCoordinate).getAsFluidCell().getNumberParticles();
+                this.averageTermperature +=  cells.getCell(eachCoordinate).getAsFluidCell().getValue();
+            }
+        }
+        averageTermperature /= this.coords.size();
+    }
+
+
+
 }

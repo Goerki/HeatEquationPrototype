@@ -1,5 +1,7 @@
-package Cells;
+package Heatequation.Cells;
 
+
+import Heatequation.HeatequationLogger;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -14,24 +16,29 @@ public class Cells implements Serializable {
     List<Coordinates> cellsForSolidCalculation;
     public static double gasConstant = 0.0001;
     public static double cellSize = 1;
+    HeatequationLogger logger;
 
-    public Cells(int size, double value, Material material){
+    public Cells(int size, double value, Material material, HeatequationLogger logger){
         this.sizeX = size;
         this.sizeY = size;
         this.sizeZ = size;
+        this.logger= logger;
         cells = new Cell[size][size][size];
         initCoords();
         initAllCells(value, material);
         cellsForSolidCalculation = new ArrayList<>();
+
     }
 
-    public Cells(int sizeX, int sizeY, int sizeZ, double value, Material material){
+    public Cells(int sizeX, int sizeY, int sizeZ, double value, Material material, HeatequationLogger logger){
         this.sizeX = sizeX;
         this.sizeY = sizeY;
         this.sizeZ = sizeZ;
+        this.logger= logger;
         cells = new Cell[sizeX][sizeY][sizeZ];
         this.initCoords();
         this.initAllCells(value, material);
+
      }
 
      private void initAllCells(double value, Material material){
@@ -129,7 +136,7 @@ public class Cells implements Serializable {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                System.out.print("info: Cordinate " + coords + " not found in cells. " + e.toString());
+                this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "info: Cordinate " + coords + " not found in cells. " + e.toString());
             }
         }
         if (counter >0){
@@ -300,9 +307,23 @@ public class Cells implements Serializable {
         return result/cellsForCalculation.size();
     }
 
+    public int getNumberOfAdjacentFluidCells(Coordinates centerCell){
+        int result = this.getAllAdjacentFluidCells(centerCell).size();
+            result += this.getCell(centerCell).getAsFluidCell().getNumberOfVirtualBorders();
+            return result;
+
+    }
+
     public List<Coordinates> getAllAdjacentFluidCells(Coordinates centerFluidCell){
 
          List<Coordinates> result = new ArrayList<>();
+         //TODO ??
+         if(this.getCell(centerFluidCell).isFluid){
+             FluidCell fluidCell = this.getCell(centerFluidCell).getAsFluidCell();
+             if(fluidCell.isBorderCell()){
+             }
+
+         }
          if(this.cellExists(centerFluidCell.getCellXMinus1()) && this.getCell(centerFluidCell.getCellXMinus1()).isFluid){
              result.add(centerFluidCell.getCellXMinus1());
          }
@@ -369,8 +390,8 @@ public class Cells implements Serializable {
         }
     }
 
-    public void createVirtualBorderCells(List<Coordinates> area, double temp){
-        for(Coordinates coord:area){
+    public void createAllVirtualBorderCells(double temp){
+        for(Coordinates coord:this.coords){
             int border =0;
             if (coord.x == 0 || coord.x == sizeX-1){
                 border ++;
@@ -382,10 +403,14 @@ public class Cells implements Serializable {
                 border ++;
 
             }
-            this.getCell(coord).getAsFluidCell().setBorderCell(border, temp);
+            if (this.getCell(coord).isFluid) {
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "setting " + border + " border cells for cell " + coord);
 
-            if (coord.y == 0 || coord.y == sizeY-1){
-                this.getCell(coord).getAsFluidCell().setBorderCellOnTop();
+                this.getCell(coord).getAsFluidCell().setBorderCell(border, temp);
+
+                if (coord.y == 0 || coord.y == sizeY - 1) {
+                    this.getCell(coord).getAsFluidCell().setBorderCellOnTop();
+                }
             }
         }
 
@@ -411,7 +436,7 @@ public class Cells implements Serializable {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                System.out.print("info: Cordinate " + coords + " not found in cells. " + e.toString());
+                this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "info: Cordinate " + coords + " not found in cells. " + e.toString());
             }
         }
         if (counter > 0){
@@ -422,10 +447,13 @@ public class Cells implements Serializable {
     }
 
     public void makeSingleFluidCell(Coordinates coord,double value, Material material) throws Exception{
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "new fluid cell: " + coord.x + coord.y+ coord.z);
         this.makeSingleFluidCell(coord.x, coord.y, coord.z, value, material);
     }
 
     public void makeSingleFluidCell(int x, int y, int z,double value, Material material) throws Exception{
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "new fluid cell: " + x + y+ z);
+
         this.cells[x][y][z]= new FluidCell(value, material, 1);
     }
 
@@ -442,7 +470,7 @@ public class Cells implements Serializable {
                 counter++;
             } catch (Exception e) {
                 e.printStackTrace();
-                System.out.print("info: Cordinate " + coords + " not found in cells. " + e.toString());
+                this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "info: Cordinate " + coords + " not found in cells. " + e.toString());
             }
         }
         if (counter > 0){
@@ -464,7 +492,7 @@ public class Cells implements Serializable {
         if (coord.x >= sizeX || coord.y >= sizeY || coord.z >= sizeZ){
             return;
         }
-        System.out.print("\nnew solid cell: " + coord.x + coord.y+ coord.z);
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "new solid cell: " + coord.x + coord.y+ coord.z);
         if(this.cells[coord.x][coord.y][coord.z].isSolid()){
             this.cells[coord.x][coord.y][coord.z].material = material;
         }else {

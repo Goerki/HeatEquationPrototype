@@ -1,19 +1,21 @@
+package Heatequation;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import Cells.Cells;
-import Cells.CellArea;
-import  Cells.Coordinates;
-import Cells.Material;
-import  Cells.Cell;
-import  Cells.FluidCell;
+import Heatequation.Cells.Cells;
+import Heatequation.Cells.CellArea;
+import  Heatequation.Cells.Coordinates;
+import Heatequation.Cells.Material;
+import Heatequation.Cells.Cell;
+import Heatequation.Cells.FluidCell;
 
 public class Space implements Serializable {
-    Cells allCells;
-    int sizeX;
-    int sizeY;
-    int sizeZ;
+    public Cells allCells;
+    public int sizeX;
+    public int sizeY;
+    public int sizeZ;
     int numberCellsForSolidCalculation;
     CalculationThread[] calculationThreads;
     MainThread mainThread;
@@ -25,16 +27,31 @@ public class Space implements Serializable {
     private double cellLength;
     private int numberSteps;
     private int numberCalculatedSteps;
+    public HeatequationLogger logger;
+    double startingValue;
+    Coordinates logCoords;
 
 
-    Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
+    public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
+        this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
         this.sizeX= sizeX;
         this.sizeY= sizeY;
         this.sizeZ= sizeZ;
-        this.allCells = new Cells(sizeX, sizeY, sizeZ, startValue, material);
+        this.allCells = new Cells(sizeX, sizeY, sizeZ, startValue, material, this.logger);
         this.numberThreads=numberThreads;
         this.cellLength = 1;
+        this.startingValue = startValue;
+        this.logCoords = new Coordinates(2,2,2);
 
+
+    }
+
+    public double getCellLength() {
+        return cellLength;
     }
 
     public String createCube(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
@@ -44,6 +61,7 @@ public class Space implements Serializable {
             return this.allCells.makeCubeFluidCells(x1,y1,z1,x2,y2,z2,material);
         }
         else{
+            this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "please check material definition in json file");
             return "please check material definition in json file";
         }
 
@@ -83,12 +101,13 @@ public class Space implements Serializable {
         return result;
     }
 
-    boolean initialize(double time, double deltaT, int numberThreads){
+    public boolean initialize(double time, double deltaT, int numberThreads){
         //Create areas
         if (this.isInitialized)
             return false;
 
         this.isInitialized=true;
+        this.allCells.createAllVirtualBorderCells(this.startingValue);
         this.createAreas();
         this.deltaT = deltaT;
         this.numberCalculatedSteps = 0;
@@ -132,7 +151,7 @@ public class Space implements Serializable {
              //check if cell already in a area
             if (!allCells.getCell(coord).isInitialized){
                 //create new Area
-                areas.add(new CellArea(this.allCells, coord));
+                areas.add(new CellArea(this, coord, this.logger));
                 //set all cells inside this area to initialized
                 this.allCells.setCellsToInitialized(this.areas.get(this.areas.size()-1).coords);
             }
@@ -237,7 +256,6 @@ public class Space implements Serializable {
             return;
         }
         allCells.getCell(coords).setValue(0);
-            Coordinates ausgabe = new Coordinates(0,7,2);
         for(Coordinates neighbourCell: allCells.getAllAdjacentCellsForSolidCalculation(coords)) {
             if (allCells.getCell(coords).isFluid()){
                 allCells.getCell(coords).addToValue((allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue()) *allCells.getCell(coords).getAsFluidCell().getNusseltNumber());
@@ -246,18 +264,18 @@ public class Space implements Serializable {
                 allCells.getCell(coords).addToValue(allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue() );
             }
         }
-        if (coords.equals(ausgabe)){
-            System.out.print("\ndifference before: " + allCells.getCell(coords).getValue());
+        if (coords.equals(logCoords)){
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "difference before: " + allCells.getCell(coords).getValue());
         }
         allCells.getCell(coords).setValue(allCells.getCell(coords).getValue() *this.deltaT*allCells.getCell(coords).getAlpha()/this.cellLength);
 
-        if (coords.equals(ausgabe)){
-            System.out.print("\ndifference after: " + allCells.getCell(coords).getValue());
+        if (coords.equals(logCoords)){
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "difference after: " + allCells.getCell(coords).getValue());
         }
         allCells.getCell(coords).addToValue(allCells.getCell(coords).getLastValue());
         allCells.getCell(coords).addToValue(allCells.getCell(coords).getHeatFlow()*this.deltaT);
-        if (coords.equals(ausgabe)){
-            System.out.print("\nZelle " + ausgabe + " : temperatur " + allCells.getCell(coords).getValue());
+        if (coords.equals(logCoords)){
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "Zelle " + logCoords + " : temperatur " + allCells.getCell(coords).getValue());
         }
 
     }
@@ -269,7 +287,7 @@ public class Space implements Serializable {
     }
 
     public double getPercentageOfStatus(){
-        System.out.print("\ncalculatedSteps: " + numberCalculatedSteps + " numberSteps "+ numberSteps + "bruch: " + (double)numberCalculatedSteps/(double)numberSteps);
+        //this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\ncalculatedSteps: " + numberCalculatedSteps + " numberSteps "+ numberSteps + "bruch: " + (double)numberCalculatedSteps/(double)numberSteps);
         return ((double)numberCalculatedSteps/(double)numberSteps * 100.0);
     }
 
@@ -285,45 +303,95 @@ public class Space implements Serializable {
 
     private void calculateParticleFlow(Coordinates coord){
         double diffusion = this.calcDiffusionForCell(coord);
+
         double convection = 0;
-        //System.out.print("diffussion: " + diffusion);
+        //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "diffussion: " + diffusion);
         for(Coordinates neighbor:allCells.getAllAdjacentFluidCells(coord)){
             this.particleFlowFromTo(coord, neighbor, diffusion);
+            if (coord.equals(logCoords)){
+              //  this.logFluidCell("diffussion from", coord);
+              //  this.logFluidCell("diffussion to", neighbor);
+            }
         }
+
+
+
         allCells.getCell(coord).getAsFluidCell().calcDiffussionToBorderCell(diffusion);
         if (allCells.cellExists(coord.getCellYPlus1()) && allCells.getCell(coord.getCellYPlus1()).isFluid()){
             convection = this.calcConvectionForCell(coord);
-            //System.out.print("convection: " + convection);
+            //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "convection: " + convection);
+
 
             this.particleFlowFromTo(coord, coord.getCellYPlus1(), convection);
+
         }
         if(allCells.getCell(coord).getAsFluidCell().hasBorderCellOnTop()){
-            allCells.getCell(coord).getAsFluidCell().calcConvectionOverBorder(this.calcConvectionForCell(coord));
+            allCells.getCell(coord).getAsFluidCell().calcConvectionOverBorder(convection);
         }
-        double diff = allCells.getCell(coord).getAsFluidCell().getLastNumberParticles() - allCells.getCell(coord).getAsFluidCell().getNumberParticles();
-        System.out.print("\nflow for " + coord.toString() + " : " + diff + " for lasNumberPart " + allCells.getCell(coord).getAsFluidCell().getLastNumberParticles());
+        //this.logFluidCell("after heatFlow from " + coord.toString() , this.logCoords);
+
+        //non functional
+        if (this.logCoords.equals(coord)){
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "diff for " + logCoords.toString() + " : " + diffusion);
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "conv for " + logCoords.toString() + " : " + convection);
+            double diff = allCells.getCell(coord).getAsFluidCell().getLastNumberParticles() - allCells.getCell(coord).getAsFluidCell().getNumberParticles();
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "flow for " + coord.toString() + " : " + diff + " for lasNumberPart " + allCells.getCell(coord).getAsFluidCell().getLastNumberParticles());
+            this.logFluidCell("after convection", coord);
+            this.logFluidCell("y+1 convection", coord.getCellYPlus1());
+        }
+
+
     }
 
     private double calcDiffusionForCell(Coordinates cell){
-        double baseFactor = 0.05;
-        return baseFactor*allCells.getCell(cell).getValue()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getLastNumberParticles();
+        double baseFactor = 0.01;
+        return baseFactor*allCells.getCell(cell).getLastValue()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getLastNumberParticles();
     }
 
     private void particleFlowFromTo(Coordinates source, Coordinates target, double amount){
-        allCells.getCell(source).getAsFluidCell().addToAbsoluteNumberParticles(-amount, allCells.getCell(target).getLastValue());
-        allCells.getCell(target).getAsFluidCell().addToAbsoluteNumberParticles(amount, allCells.getCell(source).getLastValue());
+
+        allCells.getCell(source).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-amount, allCells.getCell(target).getLastValue());
+        allCells.getCell(target).getAsFluidCell().addToNumberParticlesAndInnerEnergy(amount, allCells.getCell(source).getLastValue());
+
     }
 
      private double calcConvectionForCell(Coordinates coordinates){
-        double baseFactor = 0.05;
+        double baseFactor = 1;
         baseFactor *= (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()));
-        baseFactor *= this.allCells.getCell(coordinates).getAlpha()*this.allCells.getCell(coordinates).getAsFluidCell().getLastNumberParticles();
+        baseFactor *= this.allCells.getCell(coordinates).getAlpha()*this.allCells.getCell(coordinates).getAsFluidCell().getLastNumberParticles()*deltaT;
+
+         if (coordinates.equals(logCoords)){
+             this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "meanValueForLayer : " + getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()) + " leads to difference: " + (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell())));
+         }
 
         return baseFactor;
     }
 
+    public void logFluidCell(String introduction, Coordinates coords){
+        if (this.allCells.getCell(coords).getAsFluidCell() == null){
+            return;
+        }
+
+        StringBuilder builder = new StringBuilder("Cell " + coords + " " + introduction+" T= " );
+        double temp = this.allCells.getCell(coords).getAsFluidCell().getValue();
+        builder.append(temp + " N=");
+        double part = this.allCells.getCell(coords).getAsFluidCell().getNumberParticles();
+        builder.append(part + " NT=");
+        builder.append(part*temp);
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, builder.toString());
+        StringBuilder builder0 = new StringBuilder("Cell " + coords + " " + introduction+" T0= " );
+        double temp0 = this.allCells.getCell(coords).getAsFluidCell().getLastValue();
+        builder0.append(temp0 + " N0=");
+        double part0 = this.allCells.getCell(coords).getAsFluidCell().getLastNumberParticles();
+        builder0.append(part0 + " N0T0=");
+        builder0.append(part0*temp0);
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, builder0.toString());
+
+    }
+
 
     private double getMeanValueForAreaAndLayer(Coordinates coords, FluidCell cell){
+
         if(coords.y == cell.getArea().getMinY()){
             return (cell.getArea().getMeanValueForY(coords.y) + cell.getArea().getMeanValueForY(coords.y +1))/2;
         }
@@ -346,7 +414,7 @@ public class Space implements Serializable {
         int tempSize = 0;
         for (int i = 0; i< numberThreads-1; i++){
             calculationThreads[i] = new CalculationThread(this, tempSize,tempSize+threadSize-1);
-            System.out.print("start: " + tempSize + "end : "+ -(tempSize+threadSize-1));
+            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "start: " + tempSize + "end : "+ -(tempSize+threadSize-1));
              tempSize += threadSize;
         }
         calculationThreads[this.calculationThreads.length-1] = new CalculationThread(this, tempSize, this.size-1);
@@ -362,7 +430,7 @@ public class Space implements Serializable {
         */
         /*
         if (x==20 && y==20 && z == 20){
-            System.out.print("\nLastCellValue: " + cell.getLastValue()+ " LastOwnCellValue: " + ownCell.getLastValue() + " alpha: " + cell.getAlpha());
+            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\nLastCellValue: " + cell.getLastValue()+ " LastOwnCellValue: " + ownCell.getLastValue() + " alpha: " + cell.getAlpha());
         }
         */
        // return ((cellA.getLastValue() - cellB.getLastValue())/cellB.getAlpha());
@@ -390,7 +458,7 @@ public class Space implements Serializable {
         int numberIterations = steps / threadInterval;
         for (int iteration = 0; iteration< numberIterations; iteration++){
 
-            System.out.print("iteration " + iteration + "from " + numberIterations);
+            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "iteration " + iteration + "from " + numberIterations);
             this.createCalculationThreads();
             this.calcSpaceThreads(threadInterval);
 
@@ -452,7 +520,7 @@ public class Space implements Serializable {
         String result = "";
         for(int x = 0; x<this.size; x++){
             result += "\n\n\n";
-            System.out.print("\nx=" + x);
+            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\nx=" + x);
             for(int y = 0; y<this.size; y++){
                 result += "\n";
                 for(int z = 0; z<this.size; z++){

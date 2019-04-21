@@ -1,5 +1,7 @@
 
 
+import Heatequation.Space;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;

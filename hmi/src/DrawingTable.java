@@ -1,5 +1,5 @@
-import Cells.Cell;
-import Cells.Cells;
+import Heatequation.Cells.Cell;
+import Heatequation.Cells.Cells;
 import net.sf.json.JSONObject;
 
 import javax.swing.*;

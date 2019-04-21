@@ -1,5 +1,5 @@
-import Cells.Cell;
-import Cells.Material;
+import Heatequation.Cells.Cell;
+import Heatequation.Cells.Material;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;

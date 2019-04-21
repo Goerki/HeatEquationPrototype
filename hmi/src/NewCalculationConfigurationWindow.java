@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.event.*;
+import Heatequation.Space;
 
 public class NewCalculationConfigurationWindow extends JDialog {
     private JPanel contentPane;

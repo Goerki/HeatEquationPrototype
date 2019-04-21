@@ -1,4 +1,4 @@
-package Cells;
+package Heatequation.Cells;
 
 import java.io.Serializable;
 
@@ -32,9 +32,20 @@ public class FluidCell extends Cell implements Serializable {
         if(numberBorders==0){
             return;
         }
+
+
+
         this.borderCell = new VirtualFluidCell(numberBorders, temperature);
         }
 
+        public int getNumberOfVirtualBorders(){
+        if(this.isBorderCell()){
+            return this.borderCell.getNumberBorders();
+        }
+         else {
+             return 0;
+        }
+        }
         public boolean isBorderCell(){
             return this.borderCell != null;
         }
@@ -42,8 +53,8 @@ public class FluidCell extends Cell implements Serializable {
 
         public void calcDiffussionToBorderCell(double amount){
         if (this.isBorderCell()) {
-            this.addToAbsoluteNumberParticles(-amount * borderCell.getNumberBorders(), 10);
-            this.addToAbsoluteNumberParticles(amount * borderCell.getNumberBorders(), borderCell.getTemperature());
+            this.addToNumberParticlesAndInnerEnergy(-amount * borderCell.getNumberBorders(), this.oldValue);
+            this.addToNumberParticlesAndInnerEnergy(amount * borderCell.getNumberBorders(), borderCell.getTemperature());
 
             this.gasGleichungsTest = this.value * this.numberParticles;
         } else{
@@ -64,7 +75,7 @@ public class FluidCell extends Cell implements Serializable {
     }
 
     public void calcConvectionOverBorder(double amount){
-        this.addToNumberParticlesForTemperatureCalculation(-amount, 10);
+        this.addToNumberParticlesAndInnerEnergy(-amount, this.oldValue);
     }
 
     public boolean isSolid(){
@@ -105,27 +116,63 @@ public class FluidCell extends Cell implements Serializable {
         this.gasGleichungsTest = this.value * this.numberParticles;
         this.oldValue = value;
         this.lastNumberParticles = numberParticles;
+        //this.lastNumberParticles = Cells.cellSize*Cells.cellSize*Cells.cellSize*1/Cells.gasConstant/this.value;
+        //this.numberParticles=lastNumberParticles;
+
     }
 
-    public void addSelfToNumberParticlesForTemperatureCalculation(){
-        this.value = this.lastNumberParticles*this.oldValue;
+    public void initializeNormalization(double ownParticleFlow){
+        this.numberParticles -= ownParticleFlow;
+        this.value = (this.numberParticles)*this.oldValue;
+
+
     }
+
 
     public void addToNumberParticlesForTemperatureCalculation(double particles, double temperatureParticles) {
-        if (particles > 0) {
+        /*if (particles > 0) {
             this.value += particles * temperatureParticles;
-            }
+            this.numberParticles += particles;
+           } else {
+            this.value += particles*this.oldValue;
+            this.numberParticles += particles;
+        }
+        */
+        this.value += particles * temperatureParticles;
+        this.numberParticles += particles;
+
+        this.gasGleichungsTest = this.value * this.numberParticles;
+    }
+
+    public void addToNumberParticlesForTemperatureCalculationFromVirtualBorderCell(double particles) {
+        if (particles > 0) {
+            this.value += particles * borderCell.getTemperature();
+        } else {
+            this.value += particles*this.value;
+        }
         this.numberParticles += particles;
         this.gasGleichungsTest = this.value * this.numberParticles;
     }
 
-    public void addToAbsoluteNumberParticles(double particles, double temperatureParticles) {
+
+        public void addToAbsoluteNumberParticles(double particles, double temperatureParticles) {
         if (particles > 0) {
-            this.value = (this.lastNumberParticles*this.oldValue + particles * temperatureParticles)/(this.lastNumberParticles+particles);
-            this.oldValue = this.value;
+            double oldEnergy = this.lastNumberParticles*this.oldValue;
+            double incomingEnergy =  particles * temperatureParticles;
+            double sum= oldEnergy + incomingEnergy;
+            double newParticles = this.lastNumberParticles+particles;
+            this.value = (this.numberParticles*this.value + particles * temperatureParticles)/(this.lastNumberParticles+particles);
+
         }
         this.numberParticles += particles;
-        this.lastNumberParticles = this.numberParticles;
+    }
+    public void addToNumberParticlesAndInnerEnergy(double particles, double temperatureParticles) {
+        if (particles > 0) {
+              this.value +=  particles * temperatureParticles;
+        } else {
+            this.value += particles*this.oldValue;
+        }
+        this.numberParticles += particles;
     }
 
     public void setOldValue(){
@@ -137,7 +184,15 @@ public class FluidCell extends Cell implements Serializable {
         return lastNumberParticles;
     }
 
+    public double getTemperatureOfBorderCell(){
+        return this.borderCell.getTemperature();
+    }
+
     public String toString(){
         return "Fluid cell - T = " + this.value;
+    }
+
+    public double getPressureOfBorderCell() {
+        return this.borderCell.getPressure();
     }
 }

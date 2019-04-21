@@ -1,4 +1,4 @@
-package Cells;
+package Heatequation.Cells;
 
 import java.io.Serializable;
 

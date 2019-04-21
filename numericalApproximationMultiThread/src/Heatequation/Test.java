@@ -1,3 +1,4 @@
+package Heatequation;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -13,10 +14,6 @@ import java.nio.file.Paths;
 public class Test {
 
     public static void main(String[] args) {
-     StartupWindow test = new StartupWindow();
-        test.pack();
-        test.setVisible(true);
-
 
     }
 
@@ -24,7 +21,7 @@ public class Test {
 /*
     public static void test(){
         Space space = new Space(3,3,3,50,100,1);
-        space.createSolidCube(1,0,0,1,2,2,10,"Iron");
+        space.createSolidCube(1,0,0,2,2,2,10,"Iron");
 
         space.initialize(10);
         System.out.println("gubl \n");
