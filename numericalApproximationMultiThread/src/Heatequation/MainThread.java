@@ -248,7 +248,7 @@ public class MainThread extends CalculationThread {
             List<Integer> neighList = new ArrayList<>();
             for (Coordinates adjacentCell : this.space.allCells.getAllAdjacentFluidCells(coords)){
                 resList.add(equations.getResultForCoordinates(adjacentCell));
-                tempList.add(space.allCells.getCell(coords).getAsFluidCell().getLastValue());
+                tempList.add(space.allCells.getCell(adjacentCell).getAsFluidCell().getLastValue());
                 neighList.add(space.allCells.getNumberOfAdjacentFluidCells(adjacentCell));
             }
             if (this.space.allCells.getCell(coords).getAsFluidCell().isBorderCell()){
@@ -261,11 +261,11 @@ public class MainThread extends CalculationThread {
 
 
             double finalResult = 0;
-                finalResult -= N1*T0;
+                finalResult -= N1*T0*this.space.allCells.getNumberOfAdjacentFluidCells(coords);
 
             for(int i=0; i < resList.size(); i++){
 
-                    finalResult += resList.get(i) * tempList.get(i) / neighList.get(i);
+                    finalResult += resList.get(i) * tempList.get(i);
 
             }
 

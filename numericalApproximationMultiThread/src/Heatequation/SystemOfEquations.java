@@ -79,7 +79,7 @@ public class SystemOfEquations implements Serializable {
         }
 
         //ausgehende Teilchen
-        equations[centerIndex][centerIndex] = -centerCell.getLastValue();
+        equations[centerIndex][centerIndex] = -centerCell.getLastValue()*cells.getNumberOfAdjacentFluidCells(centerCoordinates);
         if (centerCoordinates.equals(logCoords)){
             logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "value: " + centerCell.getLastValue());
 
@@ -97,7 +97,7 @@ public class SystemOfEquations implements Serializable {
 
             //andere Reihenfolge der indizes
             //
-            equations[centerIndex][neighborIndex] = this.cells.getCell(neighborCell).getLastValue() / cells.getNumberOfAdjacentFluidCells(neighborCell);
+            equations[centerIndex][neighborIndex] = this.cells.getCell(neighborCell).getLastValue();
             //equations[listIndex][centerIndex] = this.cells.getCell(neighborCell).getLastValue() / cells.getNumberOfAdjacentFluidCells(neighborCell);
 
         }
@@ -145,7 +145,7 @@ public class SystemOfEquations implements Serializable {
 
         //boundaries
         if (centerCoordinates.equals(logCoords)){
-            logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result "  +( Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant*this.pressure -centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles()));
+            logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result "  +(Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant*this.pressure -centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles()));
 
         }
 
