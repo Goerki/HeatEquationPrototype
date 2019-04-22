@@ -79,6 +79,7 @@ public class SystemOfEquations implements Serializable {
         }
 
         //ausgehende Teilchen
+        //equations[centerIndex][centerIndex] = -centerCell.getLastValue()*cells.getNumberOfAdjacentFluidCells(centerCoordinates);
         equations[centerIndex][centerIndex] = -centerCell.getLastValue()*cells.getNumberOfAdjacentFluidCells(centerCoordinates);
         if (centerCoordinates.equals(logCoords)){
             logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "value: " + centerCell.getLastValue());
@@ -96,9 +97,9 @@ public class SystemOfEquations implements Serializable {
             //equations[centerIndex][listIndex] = this.cells.getCell(neighborCell).getLastValue();
 
             //andere Reihenfolge der indizes
-            //
-            equations[centerIndex][neighborIndex] = this.cells.getCell(neighborCell).getLastValue();
-            //equations[listIndex][centerIndex] = this.cells.getCell(neighborCell).getLastValue() / cells.getNumberOfAdjacentFluidCells(neighborCell);
+
+            //equations[centerIndex][neighborIndex] = this.cells.getCell(neighborCell).getLastValue();
+            equations[neighborIndex][centerIndex] = this.cells.getCell(neighborCell).getLastValue();
 
         }
 
@@ -107,11 +108,11 @@ public class SystemOfEquations implements Serializable {
             int virtualBorderCellIndex = -1;
             if (centerCell.getAsFluidCell().isBorderCell()) {
                 virtualBorderCellIndex = area.getListIndexForVirtualCell(centerCoordinates);
-                equations[centerIndex][virtualBorderCellIndex] = centerCell.getAsFluidCell().getTemperatureOfBorderCell() * centerCell.getAsFluidCell().getNumberOfVirtualBorders();
+                //equations[centerIndex][virtualBorderCellIndex] = centerCell.getAsFluidCell().getTemperatureOfBorderCell() * centerCell.getAsFluidCell().getNumberOfVirtualBorders();
 
                 //virtual cell ausgehend ... N1T1 = N2T2
                 equations[virtualBorderCellIndex][virtualBorderCellIndex] = -centerCell.getAsFluidCell().getTemperatureOfBorderCell();
-                //equations[virtualBorderCellIndex][centerIndex]=centerCell.getAsFluidCell().getLastValue()*centerCell.getAsFluidCell().getNumberOfVirtualBorders()/6;
+                equations[virtualBorderCellIndex][centerIndex]=centerCell.getAsFluidCell().getLastValue()*centerCell.getAsFluidCell().getNumberOfVirtualBorders()/6;
 
                 boundaries[virtualBorderCellIndex] = 0;
                 //equations[virtualBorderCellIndex][listIndex] = this.cells.getCell(neighborCell).getLastValue()/cells.getNumberOfAdjacentFluidCells(neighborCell);
@@ -150,6 +151,7 @@ public class SystemOfEquations implements Serializable {
         }
 
         boundaries[centerIndex] = Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant*this.pressure -centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles();
+
 
     }
 

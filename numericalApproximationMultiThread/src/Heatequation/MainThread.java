@@ -261,15 +261,17 @@ public class MainThread extends CalculationThread {
 
 
             double finalResult = 0;
-                finalResult -= N1*T0*this.space.allCells.getNumberOfAdjacentFluidCells(coords);
+                finalResult = - N1*T0*this.space.allCells.getNumberOfAdjacentFluidCells(coords);
 
             for(int i=0; i < resList.size(); i++){
-
                     finalResult += resList.get(i) * tempList.get(i);
-
             }
 
-            space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "final Result: " + finalResult);
+            //linke seite:
+            double ideal = this.space.areas.get(1).getPressure()*this.space.getCellLength()*this.space.getCellLength()*this.space.getCellLength()/space.allCells.gasConstant;
+            double lastStep = N0*T0;
+            double leftSide = ideal - lastStep;
+            space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "final Result: "+leftSide + " = " + finalResult);
 
 
         } catch (Exception e) {
