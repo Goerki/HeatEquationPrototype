@@ -1,0 +1,934 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="ConstructionWindow">
+  <grid id="cbd77" binding="contentPane" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+    <margin top="10" left="10" bottom="10" right="10"/>
+    <constraints>
+      <xy x="48" y="54" width="1126" height="791"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="e3588" layout-manager="GridLayoutManager" row-count="3" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <enabled value="true"/>
+        </properties>
+        <border type="none"/>
+        <children>
+          <tabbedpane id="68534" binding="generationSelecter">
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="1" use-parent-layout="false">
+                <minimum-size width="300" height="300"/>
+                <preferred-size width="300" height="300"/>
+                <maximum-size width="300" height="300"/>
+              </grid>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <grid id="ef47c" layout-manager="GridLayoutManager" row-count="5" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <tabbedpane title="Solid Cells"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <grid id="37d46" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                        <minimum-size width="-1" height="150"/>
+                        <preferred-size width="-1" height="150"/>
+                        <maximum-size width="-1" height="150"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="Cells.Material"/>
+                    <children>
+                      <component id="51199" class="javax.swing.JComboBox" binding="solidMaterialSelection">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <model/>
+                        </properties>
+                      </component>
+                      <grid id="993f5" binding="heatCapacity" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                            <minimum-size width="-1" height="30"/>
+                            <preferred-size width="-1" height="30"/>
+                            <maximum-size width="-1" height="30"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none" title=""/>
+                        <children>
+                          <component id="c51d8" class="javax.swing.JTextField" binding="solidHeatCapacityTextField">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <editable value="false"/>
+                              <text value="100"/>
+                            </properties>
+                          </component>
+                          <grid id="9d7cb" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="50" height="-1"/>
+                                <preferred-size width="50" height="-1"/>
+                                <maximum-size width="50" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="°K"/>
+                            <children/>
+                          </grid>
+                          <grid id="d8305" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="150" height="-1"/>
+                                <preferred-size width="150" height="-1"/>
+                                <maximum-size width="150" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="heat capacity"/>
+                            <children/>
+                          </grid>
+                        </children>
+                      </grid>
+                      <grid id="b3c63" binding="heatConductivity" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                            <minimum-size width="-1" height="30"/>
+                            <preferred-size width="-1" height="30"/>
+                            <maximum-size width="-1" height="30"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none" title=""/>
+                        <children>
+                          <component id="884b" class="javax.swing.JTextField" binding="solidHeatConductivity">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <editable value="false"/>
+                              <text value="100"/>
+                            </properties>
+                          </component>
+                          <grid id="db90e" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="50" height="-1"/>
+                                <preferred-size width="50" height="-1"/>
+                                <maximum-size width="50" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="°K"/>
+                            <children/>
+                          </grid>
+                          <grid id="d47ac" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="150" height="-1"/>
+                                <preferred-size width="150" height="-1"/>
+                                <maximum-size width="150" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="heat conductivity"/>
+                            <children/>
+                          </grid>
+                        </children>
+                      </grid>
+                    </children>
+                  </grid>
+                  <vspacer id="857e4">
+                    <constraints>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                  </vspacer>
+                </children>
+              </grid>
+              <grid id="a6a5b" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <tabbedpane title="Fluid Cells"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <grid id="4f124" layout-manager="GridLayoutManager" row-count="6" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                        <minimum-size width="-1" height="250"/>
+                        <preferred-size width="-1" height="250"/>
+                        <maximum-size width="-1" height="250"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="Cells.Material"/>
+                    <children>
+                      <component id="e4e24" class="javax.swing.JComboBox" binding="fluidMaterialSelection">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <model/>
+                        </properties>
+                      </component>
+                      <vspacer id="81d30">
+                        <constraints>
+                          <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                      </vspacer>
+                      <grid id="bc500" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                            <minimum-size width="-1" height="30"/>
+                            <preferred-size width="-1" height="30"/>
+                            <maximum-size width="-1" height="30"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none" title=""/>
+                        <children>
+                          <component id="d1522" class="javax.swing.JTextField" binding="fluidHeatCapacityTextField">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <editable value="false"/>
+                              <text value="100"/>
+                            </properties>
+                          </component>
+                          <grid id="af64" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="50" height="-1"/>
+                                <preferred-size width="50" height="-1"/>
+                                <maximum-size width="50" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="°K"/>
+                            <children/>
+                          </grid>
+                          <grid id="3c726" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="150" height="-1"/>
+                                <preferred-size width="150" height="-1"/>
+                                <maximum-size width="150" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="heat capacity"/>
+                            <children/>
+                          </grid>
+                        </children>
+                      </grid>
+                      <grid id="ee291" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                            <minimum-size width="-1" height="30"/>
+                            <preferred-size width="-1" height="30"/>
+                            <maximum-size width="-1" height="30"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none" title=""/>
+                        <children>
+                          <component id="1a0a8" class="javax.swing.JTextField" binding="fluidHeatConductivityTextField">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <editable value="false"/>
+                              <text value="100"/>
+                            </properties>
+                          </component>
+                          <grid id="1eeb2" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="50" height="-1"/>
+                                <preferred-size width="50" height="-1"/>
+                                <maximum-size width="50" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="°K"/>
+                            <children/>
+                          </grid>
+                          <grid id="82a9" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="150" height="-1"/>
+                                <preferred-size width="150" height="-1"/>
+                                <maximum-size width="150" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="heat conductivity"/>
+                            <children/>
+                          </grid>
+                        </children>
+                      </grid>
+                      <grid id="8a169" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                            <minimum-size width="-1" height="30"/>
+                            <preferred-size width="-1" height="30"/>
+                            <maximum-size width="-1" height="30"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none" title=""/>
+                        <children>
+                          <component id="db769" class="javax.swing.JTextField" binding="viskosityTextField">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <editable value="false"/>
+                              <text value="100"/>
+                            </properties>
+                          </component>
+                          <grid id="2d6f" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="50" height="-1"/>
+                                <preferred-size width="50" height="-1"/>
+                                <maximum-size width="50" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="°K"/>
+                            <children/>
+                          </grid>
+                          <grid id="ad6c1" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="150" height="-1"/>
+                                <preferred-size width="150" height="-1"/>
+                                <maximum-size width="150" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="viskosity"/>
+                            <children/>
+                          </grid>
+                        </children>
+                      </grid>
+                      <grid id="3f518" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                            <minimum-size width="-1" height="30"/>
+                            <preferred-size width="-1" height="30"/>
+                            <maximum-size width="-1" height="30"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none" title=""/>
+                        <children>
+                          <component id="6e57d" class="javax.swing.JTextField" binding="nusseltTextField">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <editable value="false"/>
+                              <text value="100"/>
+                            </properties>
+                          </component>
+                          <grid id="46068" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="50" height="-1"/>
+                                <preferred-size width="50" height="-1"/>
+                                <maximum-size width="50" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="°K"/>
+                            <children/>
+                          </grid>
+                          <grid id="d9a8b" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <minimum-size width="150" height="-1"/>
+                                <preferred-size width="150" height="-1"/>
+                                <maximum-size width="150" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="none" title="nusselt number"/>
+                            <children/>
+                          </grid>
+                        </children>
+                      </grid>
+                    </children>
+                  </grid>
+                </children>
+              </grid>
+              <grid id="bce67" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <tabbedpane title="Boundary Condition"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <grid id="4a1de" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <grid id="104a3" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                            <minimum-size width="50" height="-1"/>
+                            <preferred-size width="50" height="-1"/>
+                            <maximum-size width="50" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none" title="W/s"/>
+                        <children/>
+                      </grid>
+                      <component id="a87f9" class="javax.swing.JTextField" binding="heatFlowText">
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                            <preferred-size width="150" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                      </component>
+                      <component id="9bae7" class="javax.swing.JCheckBox" binding="heatFlowCheckbox">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                            <minimum-size width="150" height="-1"/>
+                            <preferred-size width="150" height="-1"/>
+                            <maximum-size width="150" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties>
+                          <label value="Heat Flow: "/>
+                          <text value="Heat Flow: "/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="56d0b" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <grid id="bfe0e" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                            <minimum-size width="50" height="-1"/>
+                            <preferred-size width="50" height="-1"/>
+                            <maximum-size width="50" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none" title="°K"/>
+                        <children/>
+                      </grid>
+                      <component id="79ce6" class="javax.swing.JTextField" binding="fixedTemperatureField">
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                            <preferred-size width="150" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                      </component>
+                      <component id="2adcc" class="javax.swing.JCheckBox" binding="fixedTemperatureCheckBox">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                            <minimum-size width="150" height="-1"/>
+                            <preferred-size width="150" height="-1"/>
+                            <maximum-size width="150" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties>
+                          <text value="Fixed Temperature: "/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="97d4a" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <grid id="28ed7" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                            <minimum-size width="50" height="-1"/>
+                            <preferred-size width="50" height="-1"/>
+                            <maximum-size width="50" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none" title="°K"/>
+                        <children/>
+                      </grid>
+                      <component id="8f34b" class="javax.swing.JTextField" binding="startingTemperatureField">
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                            <preferred-size width="150" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                      </component>
+                      <component id="967d8" class="javax.swing.JCheckBox" binding="startingTemperatureCheckbox">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                            <minimum-size width="150" height="-1"/>
+                            <preferred-size width="150" height="-1"/>
+                            <maximum-size width="150" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties>
+                          <text value="Starting Temperature"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <vspacer id="d92c5">
+                    <constraints>
+                      <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                  </vspacer>
+                </children>
+              </grid>
+            </children>
+          </tabbedpane>
+          <grid id="15a7f" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <grid row="0" column="0" row-span="3" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                <preferred-size width="165" height="24"/>
+              </grid>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <grid id="c2486" binding="tablePanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children/>
+              </grid>
+              <grid id="fdaa0" binding="layerSelectionPanel" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="7" anchor="2" fill="1" indent="0" use-parent-layout="true">
+                    <minimum-size width="-1" height="40"/>
+                    <preferred-size width="-1" height="40"/>
+                    <maximum-size width="-1" height="40"/>
+                  </grid>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <component id="eca5a" class="javax.swing.JComboBox" binding="axisSelection">
+                    <constraints>
+                      <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="1" use-parent-layout="false">
+                        <minimum-size width="70" height="20"/>
+                        <preferred-size width="70" height="20"/>
+                        <maximum-size width="70" height="20"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <editable value="false"/>
+                      <model>
+                        <item value="X"/>
+                        <item value="Y"/>
+                        <item value="Z"/>
+                      </model>
+                    </properties>
+                  </component>
+                  <component id="ba93" class="javax.swing.JSlider" binding="layerSlider">
+                    <constraints>
+                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <maximum value="10"/>
+                      <paintTicks value="true"/>
+                      <value value="0"/>
+                    </properties>
+                  </component>
+                  <component id="1138b" class="javax.swing.JTextPane" binding="currentLayerSelectionTextPane">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="2" indent="0" use-parent-layout="false">
+                        <minimum-size width="20" height="-1"/>
+                        <preferred-size width="20" height="50"/>
+                        <maximum-size width="20" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <text value="0"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+            </children>
+          </grid>
+          <grid id="d42db" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                <minimum-size width="300" height="-1"/>
+                <preferred-size width="300" height="-1"/>
+                <maximum-size width="300" height="-1"/>
+              </grid>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <grid id="38822" layout-manager="GridLayoutManager" row-count="4" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                    <minimum-size width="-1" height="150"/>
+                    <preferred-size width="-1" height="150"/>
+                    <maximum-size width="-1" height="150"/>
+                  </grid>
+                </constraints>
+                <properties/>
+                <border type="none" title=""/>
+                <children>
+                  <component id="ed4f2" class="javax.swing.JTextField" binding="textField1X">
+                    <constraints>
+                      <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="150" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <text value="0"/>
+                    </properties>
+                  </component>
+                  <component id="f5988" class="javax.swing.JTextField" binding="textField1Z">
+                    <constraints>
+                      <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="150" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <text value="0"/>
+                    </properties>
+                  </component>
+                  <component id="317d4" class="javax.swing.JTextField" binding="textField1Y">
+                    <constraints>
+                      <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="150" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <text value="0"/>
+                    </properties>
+                  </component>
+                  <grid id="b4fb8" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="1" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <minimum-size width="-1" height="20"/>
+                        <preferred-size width="-1" height="20"/>
+                        <maximum-size width="-1" height="20"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="Point 1"/>
+                    <children/>
+                  </grid>
+                  <grid id="2fdbe" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <minimum-size width="100" height="20"/>
+                        <preferred-size width="300" height="20"/>
+                        <maximum-size width="300" height="20"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="X:"/>
+                    <children/>
+                  </grid>
+                  <grid id="c5dde" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <minimum-size width="100" height="20"/>
+                        <preferred-size width="300" height="20"/>
+                        <maximum-size width="300" height="20"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="Y:"/>
+                    <children/>
+                  </grid>
+                  <grid id="3c679" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <minimum-size width="100" height="20"/>
+                        <preferred-size width="300" height="20"/>
+                        <maximum-size width="300" height="20"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="Z:"/>
+                    <children/>
+                  </grid>
+                </children>
+              </grid>
+              <grid id="4e1e7" layout-manager="GridLayoutManager" row-count="4" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false">
+                    <minimum-size width="-1" height="150"/>
+                    <preferred-size width="-1" height="150"/>
+                    <maximum-size width="-1" height="150"/>
+                  </grid>
+                </constraints>
+                <properties/>
+                <border type="none" title=""/>
+                <children>
+                  <component id="bdfde" class="javax.swing.JTextField" binding="textField2X">
+                    <constraints>
+                      <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="150" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <text value="0"/>
+                    </properties>
+                  </component>
+                  <component id="2e2e4" class="javax.swing.JTextField" binding="textField2Z">
+                    <constraints>
+                      <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="150" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <text value="0"/>
+                    </properties>
+                  </component>
+                  <component id="74ba6" class="javax.swing.JTextField" binding="textField2Y">
+                    <constraints>
+                      <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="150" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <text value="0"/>
+                    </properties>
+                  </component>
+                  <grid id="422e1" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="1" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <minimum-size width="-1" height="20"/>
+                        <preferred-size width="-1" height="20"/>
+                        <maximum-size width="-1" height="20"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="Point 2"/>
+                    <children/>
+                  </grid>
+                  <grid id="72a55" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <minimum-size width="100" height="20"/>
+                        <preferred-size width="300" height="20"/>
+                        <maximum-size width="300" height="20"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="X:"/>
+                    <children/>
+                  </grid>
+                  <grid id="a5704" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <minimum-size width="100" height="20"/>
+                        <preferred-size width="300" height="20"/>
+                        <maximum-size width="300" height="20"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="Y:"/>
+                    <children/>
+                  </grid>
+                  <grid id="750f8" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <minimum-size width="100" height="20"/>
+                        <preferred-size width="300" height="20"/>
+                        <maximum-size width="300" height="20"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none" title="Z:"/>
+                    <children/>
+                  </grid>
+                </children>
+              </grid>
+              <grid id="1169b" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <component id="df03d" class="javax.swing.JButton" binding="solidGenerateButton">
+                    <constraints>
+                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <text value="Generate"/>
+                    </properties>
+                  </component>
+                  <hspacer id="11bc8">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                  </hspacer>
+                </children>
+              </grid>
+              <vspacer id="bc3a2">
+                <constraints>
+                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                </constraints>
+              </vspacer>
+            </children>
+          </grid>
+        </children>
+      </grid>
+      <grid id="94766" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <grid id="9538f" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="true" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="e7465" class="javax.swing.JButton" binding="buttonOK">
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <text value="OK"/>
+                </properties>
+              </component>
+              <component id="5723f" class="javax.swing.JButton" binding="buttonCancel">
+                <constraints>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <text value="Cancel"/>
+                </properties>
+              </component>
+            </children>
+          </grid>
+          <component id="8d5d6" class="javax.swing.JButton" binding="saveButton" default-binding="true">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text value="Save"/>
+            </properties>
+          </component>
+          <grid id="2b5bd" binding="consolePanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children/>
+          </grid>
+        </children>
+      </grid>
+      <grid id="45e09" binding="consolePane" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="89334" class="javax.swing.JTextPane" binding="consoleTextField">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                <minimum-size width="-1" height="30"/>
+                <preferred-size width="150" height="30"/>
+                <maximum-size width="-1" height="30"/>
+              </grid>
+            </constraints>
+            <properties>
+              <editable value="false"/>
+              <enabled value="true"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+    </children>
+  </grid>
+</form>
