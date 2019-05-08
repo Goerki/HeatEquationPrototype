@@ -93,10 +93,14 @@ public class SystemOfEquations implements Serializable {
 
         //ausgehende Teilchen
         //equations[centerIndex][centerIndex] = -centerCell.getLastValue()*cells.getNumberOfAdjacentFluidCells(centerCoordinates);
-        equations[centerIndex][centerIndex] = -centerCell.getLastValue()/cells.getNumberOfAdjacentFluidCells(centerCoordinates);
+        equations[centerIndex][centerIndex] = -centerCell.getLastValue();
         if (centerCoordinates.equals(logCoords)){
             logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "value: " + centerCell.getLastValue());
 
+        }
+        double neighborTemperaturSum = 0;
+        for(Coordinates neighborCell :adjacentCells) {
+            neighborTemperaturSum += this.cells.getCell(centerCoordinates).getLastValue();
         }
         for(Coordinates neighborCell :adjacentCells) {
             //einkommende Teilchen
@@ -112,7 +116,12 @@ public class SystemOfEquations implements Serializable {
             //andere Reihenfolge der indizes
 
             //equations[centerIndex][neighborIndex] = this.cells.getCell(neighborCell).getLastValue();
-            equations[centerIndex][neighborIndex] = this.cells.getCell(neighborCell).getLastValue()/ cells.getNumberOfAdjacentFluidCells(neighborCell);
+            //equations[centerIndex][neighborIndex] = this.cells.getCell(neighborCell).getLastValue()/ cells.getNumberOfAdjacentFluidCells(neighborCell);
+
+            double factor = this.cells.getCell(centerCoordinates).getLastValue()/neighborTemperaturSum;
+                equations[neighborIndex][centerIndex] = factor*this.cells.getCell(centerCoordinates).getLastValue();
+
+
 
         }
 
@@ -131,26 +140,6 @@ public class SystemOfEquations implements Serializable {
                 //equations[virtualBorderCellIndex][listIndex] = this.cells.getCell(neighborCell).getLastValue()/cells.getNumberOfAdjacentFluidCells(neighborCell);
 
             }
-
-            /*
-            if(centerCell.getAsFluidCell().isBorderCell()){
-                equations[virtualBorderCellIndex][virtualBorderCellIndex] = centerCell.getAsFluidCell().getTemperatureOfBorderCell();
-                equations[virtualBorderCellIndex][centerIndex] = -centerCell.getLastValue();
-              //  boundaries[virtualBorderCellIndex] = - centerCell.getAsFluidCell().getLastNumberParticles() + Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant;
-                boundaries[virtualBorderCellIndex] = 3333;
-
-            }
-            */
-
-
-            /*
-            if(centerCell.getAsFluidCell().isBorderCell()){
-                int virtualBorderCellIndex = area.getListIndexForVirtualCell(centerCoordinates);
-                equations[centerIndex][virtualBorderCellIndex] = centerCell.getAsFluidCell().getTemperatureOfBorderCell();
-                equations[virtualBorderCellIndex][virtualBorderCellIndex] = 1;
-                boundaries[virtualBorderCellIndex] = - centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles() + Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant;
-            }
-                   */
 
 
 
