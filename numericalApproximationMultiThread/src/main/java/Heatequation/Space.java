@@ -33,9 +33,9 @@ public class Space implements Serializable {
 
     public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
         this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
-        this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
-        this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
-        this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
         this.sizeX= sizeX;
         this.sizeY= sizeY;
@@ -303,7 +303,7 @@ public class Space implements Serializable {
     private void calculateParticleFlow(Coordinates coord){
         double diffusion = this.calcDiffusionForCell(coord);
 
-        double convection = 0;
+        double convection = this.calcConvectionForCell(coord);
         //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "diffussion: " + diffusion);
         for(Coordinates neighbor:allCells.getAllAdjacentFluidCells(coord)){
             this.particleFlowFromTo(coord, neighbor, diffusion);
@@ -316,14 +316,16 @@ public class Space implements Serializable {
 
 
         allCells.getCell(coord).getAsFluidCell().calcDiffussionToBorderCell(diffusion);
-        if (allCells.cellExists(coord.getCellYPlus1()) && allCells.getCell(coord.getCellYPlus1()).isFluid()){
-            convection = this.calcConvectionForCell(coord);
+        if (allCells.getCell(coord).getAsFluidCell().hasBorderCellOnTop()) {
+            //TODO: Convection over top
+        }
             //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "convection: " + convection);
 
+            this.calcConvectionFlowFromCell(coord, convection);
 
-            this.particleFlowFromTo(coord, coord.getCellYPlus1(), convection);
 
-        }
+
+
         if(allCells.getCell(coord).getAsFluidCell().hasBorderCellOnTop()){
             allCells.getCell(coord).getAsFluidCell().calcConvectionOverBorder(convection);
         }
@@ -342,20 +344,58 @@ public class Space implements Serializable {
 
     }
 
+    private void calcConvectionFlowFromCell(Coordinates coord, double convection) {
+        if (allCells.cellExists(coord.getCellYPlus1()) && allCells.getCell(coord.getCellYPlus1()).isFluid()) {
+            this.particleFlowFromTo(coord, coord.getCellYPlus1(), convection);
+            return;
+        } else {
+            int numberAdjacentCellsInThisLayer = 0;
+            List<Coordinates> neighborsInThisLayer = this.allCells.getAllAdjacentFluidCells(coord);
+
+            if (allCells.cellExists(coord.getCellYMinus1()) && allCells.getCell(coord.getCellYMinus1()).isFluid()) {
+                int removeIndex = 0;
+                for (Coordinates anyCoord : neighborsInThisLayer) {
+                    if (anyCoord.equals(coord.getCellYMinus1())) {
+                        removeIndex = neighborsInThisLayer.indexOf(anyCoord);
+                        break;
+                    }
+
+                }
+                neighborsInThisLayer.remove(removeIndex);
+            }
+
+            numberAdjacentCellsInThisLayer = neighborsInThisLayer.size();
+            convection /= (double) numberAdjacentCellsInThisLayer;
+            for(Coordinates neighbor: neighborsInThisLayer){
+                this.particleFlowFromTo(coord, neighbor, convection);
+            }
+
+
+                /*
+
+
+*/
+
+        }
+    }
+
     private double calcDiffusionForCell(Coordinates cell){
-        double baseFactor = 0.01;
+        double baseFactor = 0.075;
         return baseFactor*allCells.getCell(cell).getLastValue()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getLastNumberParticles();
     }
 
+
     private void particleFlowFromTo(Coordinates source, Coordinates target, double amount){
 
-        allCells.getCell(source).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-amount, allCells.getCell(target).getLastValue());
-        allCells.getCell(target).getAsFluidCell().addToNumberParticlesAndInnerEnergy(amount, allCells.getCell(source).getLastValue());
+
+        FluidCell.particleFlowSource direction = Coordinates.getSourceForCoordinates(source, target);
+        allCells.getCell(source).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-amount, allCells.getCell(target).getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
+        allCells.getCell(target).getAsFluidCell().addToNumberParticlesAndInnerEnergy(amount, allCells.getCell(source).getLastValue(), direction);
 
     }
 
      private double calcConvectionForCell(Coordinates coordinates){
-        double baseFactor = 1;
+        double baseFactor = 20;
         baseFactor *= (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()));
         baseFactor *= this.allCells.getCell(coordinates).getAlpha()*this.allCells.getCell(coordinates).getAsFluidCell().getLastNumberParticles()*deltaT;
 
@@ -531,4 +571,20 @@ public class Space implements Serializable {
     }
 
     */
+
+    public String drawArea(CellArea area){
+        StringBuilder builder = new StringBuilder("area: \n");
+        for(Coordinates coord: area.coords){
+            if (area.isFluid()){
+                FluidCell cell = this.allCells.getCell(coord).getAsFluidCell();
+                builder.append(coord.toString() + " : T=");
+                builder.append(cell.getValue() + " T0=");
+                builder.append(cell.getLastValue() + " N=");
+                builder.append(cell.getNumberParticles() + " N0=");
+                builder.append(cell.getLastNumberParticles() + "\n");
+            }
+        }
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, builder.toString());
+        return builder.toString();
+    }
 }

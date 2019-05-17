@@ -104,7 +104,6 @@ public class CalculationThread extends Thread implements Serializable {
                 e.printStackTrace();
             }
 
-
         }
         this.status = 5;
     }
@@ -178,28 +177,31 @@ public class CalculationThread extends Thread implements Serializable {
             }
 
         }
-        for(Coordinates adjacentCord : space.allCells.getAllAdjacentFluidCells(centerCell)){
-            //add temperatures and particle flow to cell
-            FluidCell adjacentCell = this.space.allCells.getCell(adjacentCord).getAsFluidCell();
-            try {
-                cell.addToNumberParticlesForTemperatureCalculation(systemOfEquations.getResultForCoordinates(adjacentCord)/space.allCells.getNumberOfAdjacentFluidCells(adjacentCord), adjacentCell.getLastValue());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            //add flow from virtual cells
-            if (cell.isBorderCell()){
-                cell.addToNumberParticlesForTemperatureCalculationFromVirtualBorderCell(systemOfEquations.getResultForVirtualCell(centerCell));
-            }
-
-
-            if (centerCell.equals(logCoords)){
+        double factor = 1/((double) systemOfEquations.area.coords.size() - 1.0);
+        for (Coordinates eachCoord: systemOfEquations.area.coords){
+            if (!eachCoord.equals(centerCell)) {
+                //add temperatures and particle flow to cell
+                FluidCell adjacentCell = this.space.allCells.getCell(eachCoord).getAsFluidCell();
                 try {
-                    this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result " + adjacentCord + ": " + systemOfEquations.getResultForCoordinates(adjacentCord));
-
+                    cell.addToNumberParticlesForTemperatureCalculationDuringNormalization(systemOfEquations.getResultForCoordinates(eachCoord) *factor, adjacentCell.getLastValue());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                //add flow from virtual cells
+                if (cell.isBorderCell()) {
+                    cell.addToNumberParticlesForTemperatureCalculationFromVirtualBorderCell(systemOfEquations.getResultForVirtualCell(centerCell));
+                }
 
+
+                if (centerCell.equals(logCoords)) {
+                    try {
+                        this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result " + eachCoord + ": " + systemOfEquations.getResultForCoordinates(eachCoord));
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                }
             }
         }
 

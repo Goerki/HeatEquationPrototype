@@ -1,13 +1,18 @@
 package Heatequation.Cells;
 
 import java.io.Serializable;
+import java.util.Map;
 
 public class FluidCell extends Cell implements Serializable {
     private CellArea area;
     private double numberParticles;
     private double lastNumberParticles;
     private VirtualFluidCell borderCell;
-    public double gasGleichungsTest;
+    public Double[] particleFLow;
+    public enum particleFlowSource{
+        XPLUS1, XMINUS1, YPLUS1, YMINUS1, ZPLUS1, ZMINUS1
+    };
+
 
 
 
@@ -21,7 +26,8 @@ public class FluidCell extends Cell implements Serializable {
         calculateNumberParticlesForTempAndPressure(value, pressure);
         super.isForSolidCalculation = false;
 
-        this.gasGleichungsTest = this.value * this.numberParticles;
+        particleFLow = new Double[6];
+        this.resetParticleFlow();
         }
 
         public double getNusseltNumber(){
@@ -56,7 +62,6 @@ public class FluidCell extends Cell implements Serializable {
             this.addToNumberParticlesAndInnerEnergy(-amount * borderCell.getNumberBorders(), this.oldValue);
             this.addToNumberParticlesAndInnerEnergy(amount * borderCell.getNumberBorders(), borderCell.getTemperature());
 
-            this.gasGleichungsTest = this.value * this.numberParticles;
         } else{
             return;
         }
@@ -113,7 +118,6 @@ public class FluidCell extends Cell implements Serializable {
 
     public void normalizeNumberParticlesAndTemperature(){
         this.value /= this.numberParticles;
-        this.gasGleichungsTest = this.value * this.numberParticles;
         this.oldValue = value;
         this.lastNumberParticles = numberParticles;
         //this.lastNumberParticles = Cells.cellSize*Cells.cellSize*Cells.cellSize*1/Cells.gasConstant/this.value;
@@ -128,8 +132,60 @@ public class FluidCell extends Cell implements Serializable {
 
     }
 
+    private void addToParticleFlow(double numberParticles, particleFlowSource source){
+        switch (source){
+            case XPLUS1: {
+                this.particleFLow[0] += numberParticles;
+                return;
+            }
+            case XMINUS1: {
+                this.particleFLow[1] += numberParticles;
+                return;
+            }
+            case YPLUS1: {
+                this.particleFLow[2] += numberParticles;
+                return;
+            }
+            case YMINUS1: {
+                this.particleFLow[3] += numberParticles;
+                return;
+            }
+            case ZPLUS1: {
+                this.particleFLow[4] += numberParticles;
+                return;
+            }
+            case ZMINUS1:{
+                this.particleFLow[5] += numberParticles;
+                return;
+            }
+        }
+    }
 
-    public void addToNumberParticlesForTemperatureCalculation(double particles, double temperatureParticles) {
+    public double getParticleFlowFromSource( particleFlowSource source){
+        switch (source){
+            case XPLUS1: {
+                return this.particleFLow[0];
+            }
+            case XMINUS1:return this.particleFLow[1];
+            case YPLUS1: return this.particleFLow[2];
+            case YMINUS1:return this.particleFLow[3];
+            case ZPLUS1: return this.particleFLow[4];
+            case ZMINUS1:return this.particleFLow[5];
+        }
+        return 0;
+    }
+
+    public void resetParticleFlow(){
+        this.particleFLow[0]=0.;
+        this.particleFLow[1]=0.;
+        this.particleFLow[2]=0.;
+        this.particleFLow[3]=0.;
+        this.particleFLow[4]=0.;
+        this.particleFLow[5]=0.;
+    }
+
+
+    public void addToNumberParticlesForTemperatureCalculationDuringNormalization(double particles, double temperatureParticles) {
         /*if (particles > 0) {
             this.value += particles * temperatureParticles;
             this.numberParticles += particles;
@@ -141,7 +197,6 @@ public class FluidCell extends Cell implements Serializable {
         this.value += particles * temperatureParticles;
         this.numberParticles += particles;
 
-        this.gasGleichungsTest = this.value * this.numberParticles;
     }
 
     public void addToNumberParticlesForTemperatureCalculationFromVirtualBorderCell(double particles) {
@@ -151,7 +206,8 @@ public class FluidCell extends Cell implements Serializable {
             this.value += particles*this.value;
         }
         this.numberParticles += particles;
-        this.gasGleichungsTest = this.value * this.numberParticles;
+
+       // this.addToParticleFlow(particles, source);
     }
 
 
@@ -173,6 +229,16 @@ public class FluidCell extends Cell implements Serializable {
             this.value += particles*this.oldValue;
         }
         this.numberParticles += particles;
+    }
+
+    public void addToNumberParticlesAndInnerEnergy(double particles, double temperatureParticles, particleFlowSource source) {
+        if (particles > 0) {
+            this.value +=  particles * temperatureParticles;
+        } else {
+            this.value += particles*this.oldValue;
+        }
+        this.numberParticles += particles;
+        this.addToParticleFlow(particles, source);
     }
 
     public void setOldValue(){

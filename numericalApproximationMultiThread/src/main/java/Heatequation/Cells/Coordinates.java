@@ -117,6 +117,35 @@ public class Coordinates implements Serializable {
         return result;
     }
 
+    public static FluidCell.particleFlowSource getSourceForCoordinates(Coordinates source, Coordinates target){
+        if (target.getCellYMinus1().equals(source)){
+            return FluidCell.particleFlowSource.YMINUS1;
+        } else if (target.getCellYPlus1().equals(source)){
+            return FluidCell.particleFlowSource.YPLUS1;
+        } else if (target.getCellXMinus1().equals(source)){
+            return FluidCell.particleFlowSource.XMINUS1;
+        } else if (target.getCellXPlus1().equals(source)){
+            return FluidCell.particleFlowSource.XPLUS1;
+        } else if (target.getCellZPlus1().equals(source)){
+            return FluidCell.particleFlowSource.ZPLUS1;
+        } else if (target.getCellZMinus1().equals(source)){
+            return FluidCell.particleFlowSource.ZMINUS1;
+        }
+        return null;
+
+    }
+
+    public static FluidCell.particleFlowSource getOppositeParticleFlowDirection(FluidCell.particleFlowSource source){
+        switch (source) {
+            case XMINUS1: return FluidCell.particleFlowSource.XPLUS1;
+            case XPLUS1: return FluidCell.particleFlowSource.XMINUS1;
+            case YMINUS1: return FluidCell.particleFlowSource.YPLUS1;
+            case YPLUS1: return FluidCell.particleFlowSource.YMINUS1;
+            case ZMINUS1: return FluidCell.particleFlowSource.ZPLUS1;
+            case ZPLUS1: return FluidCell.particleFlowSource.ZMINUS1;
+        }
+        return null;
+    }
 
 
     public static boolean equals(Coordinates coord1, Coordinates coord2){

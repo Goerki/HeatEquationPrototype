@@ -150,17 +150,20 @@ public class MainThread extends CalculationThread {
             waitSolidCalculationsReady();
             this.space.logFluidCell("afterSolid       ", logCoords);
 
+
             //overwrite solid values , status 2
             this.runAllThreads();
             this.overwriteOldSolidValues();
             waitSolidValuesOverwritten();
             this.space.logFluidCell("solidOverwritten ", logCoords);
 
+
             //fluid calculation status 3
             this.runAllThreads();
             this.particleFlowCalculation();
             waitFluidCalculationsReady();
             this.space.logFluidCell("fluidCalculation ", logCoords);
+
 
 
             //overwrite fluid values status 4
@@ -170,13 +173,16 @@ public class MainThread extends CalculationThread {
             this.space.logFluidCell("fluidOverwritten ", logCoords);
 
 
+
             //fill all equations status 5
             this.calcPressureForEachArea();
+            this.setAllAveragesInEquations();
             this.runAllThreads();
             this.fillEquations(this.equationSystemList, this.areas);
             //this.fillBorderBoundaries();
             waitEquationsFilled();
             this.space.logFluidCell("equationsFilled  ", logCoords);
+
 
             //solve equations status 5?
             this.solveEquations();
@@ -230,6 +236,12 @@ public class MainThread extends CalculationThread {
     private void limitEquations() {
         for (SystemOfEquations equations: this.equationSystemList){
             equations.limitEquations();
+        }
+    }
+
+    private void setAllAveragesInEquations(){
+        for (SystemOfEquations eachSystem: this.equationSystemList){
+            eachSystem.setEnergySum();
         }
     }
 

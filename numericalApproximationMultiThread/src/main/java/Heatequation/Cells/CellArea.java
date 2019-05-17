@@ -47,7 +47,7 @@ public class CellArea implements Serializable {
         if (this.borderCellsWithVirtualCells.size()==0){
             this.isIsobar = false;
             this.isIsochor = true;
-            this.normalization = space.allCells.gasConstant / space.getCellLength()/space.getCellLength()/space.getCellLength()/this.coords.size();
+            this.normalization = space.allCells.gasConstant / space.getCellLength()/space.getCellLength()/space.getCellLength()/(double) this.coords.size();
         } else {
             this.isIsochor= false;
             this.isIsobar = true;
@@ -267,6 +267,8 @@ public class CellArea implements Serializable {
         }
         averageTermperature /= this.coords.size();
     }
+
+
 
 
 

@@ -31,7 +31,7 @@
       "heatCapacity":"1",
       "heatConductivity":"0.0012",
       "viskosity":"0.1",
-      "nusselt":"30",
+      "nusselt":"100",
       "color":"DFFFFF"
     }
   ]
