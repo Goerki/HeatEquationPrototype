@@ -14,7 +14,7 @@ public class HeatequationLogger {
     FileWriter fileWriter;
     BufferedWriter writer;
     public enum LogLevel{
-        DEBUG, ERROR, INFO,
+        DEBUG, ERROR, INFO, SYTEMOFEQUATIONS
     }
     List<LogLevel> loglevel;
 
@@ -47,21 +47,24 @@ public class HeatequationLogger {
         }
 
 
-        public void logMessage(LogLevel level, String message){
-        if (this.loglevel.contains(level)) {
-            StringBuilder builder = new StringBuilder("\n" + this.getTimestamp());
-            builder.append(" " + level + ": " + message);
-            try {
-                this.writer.write(builder.toString());
-                this.writer.flush();
-                System.out.print(builder.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
+        public void logMessage(LogLevel level, String message) {
+            if (this.loglevel.contains(level)) {
+                StringBuilder builder = new StringBuilder("\n" + this.getTimestamp());
+                builder.append(" " + level + ": " + message);
+                try {
+                    this.writer.write(builder.toString());
+                    this.writer.flush();
+                    System.out.print(builder.toString());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
             }
-
-
         }
 
+        public boolean logLevelEnabled(LogLevel level){
+            return this.loglevel.contains(level);
         }
 
 

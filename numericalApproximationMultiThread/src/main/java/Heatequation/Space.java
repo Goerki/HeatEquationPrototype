@@ -36,6 +36,7 @@ public class Space implements Serializable {
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
         this.sizeX= sizeX;
         this.sizeY= sizeY;
