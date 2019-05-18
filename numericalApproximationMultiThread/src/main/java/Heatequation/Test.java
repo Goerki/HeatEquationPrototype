@@ -1,5 +1,6 @@
 package Heatequation;
 
+import Heatequation.Cells.Coordinates;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -10,10 +11,26 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Map;
 
 public class Test {
 
     public static void main(String[] args) {
+        Coordinates eins = new Coordinates(1,1,1);
+        Coordinates zwei = new Coordinates(1,1,2);
+        Map<Coordinates, String> map = new HashMap<>();
+        map.put(eins, "yay");
+        map.put(zwei, "noe");
+
+        if (!map.get(new Coordinates(1,1,1)).isEmpty()){
+            System.out.print("das geht");
+        }
+        if (eins == zwei){
+            System.out.print("geht doch!");
+
+        }
 
     }
 

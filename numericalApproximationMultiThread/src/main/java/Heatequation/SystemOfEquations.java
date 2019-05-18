@@ -37,8 +37,6 @@ public class SystemOfEquations implements Serializable {
     private BigDecimal energySumDeci;
     private double energySum;
     Coordinates logCoords;
-    private double sumOfAllDifferences;
-    private double average;
 
     SystemOfEquations(CellArea area, Cells cells, HeatequationLogger logger){
         this.logger = logger;
@@ -101,23 +99,9 @@ public class SystemOfEquations implements Serializable {
                 BigDecimal energy = new BigDecimal(this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(otherCell).getAsFluidCell().getLastValue());
                 this.energySumDeci = energySumDeci.add(energy);
         }
-        this.average = energySum/(double) this.area.coords.size();
-        this.calcSumOfAllDifferences();
     }
 
 
-    public void calcSumOfAllDifferences(){
-        this.sumOfAllDifferences = 0;
-        for (Coordinates otherCell :this.area.coords) {
-                sumOfAllDifferences += 1;
-                double difference = this.average- (this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(otherCell).getAsFluidCell().getLastValue());
-                if (difference > 0){
-                    sumOfAllDifferences += difference;
-                } else {
-                    sumOfAllDifferences -= difference;
-                }
-        }
-    }
 
     public void addToEquations(Coordinates centerCoordinates, CellArea area){
 
@@ -142,13 +126,23 @@ public class SystemOfEquations implements Serializable {
 
 
 
-        double sumOfAllDifferencesForThisCell = this.sumOfAllDifferences;
-        double DifferenceOfThisCell = average- centerCell.getAsFluidCell().getLastNumberParticles() * centerCell.getAsFluidCell().getLastValue();
-        if (DifferenceOfThisCell > 0){
-            sumOfAllDifferencesForThisCell += DifferenceOfThisCell;
-        } else {
-            sumOfAllDifferencesForThisCell -= DifferenceOfThisCell;
+        double sumOfAllDifferencesForThisCell = 0;
+        for (Coordinates nearFieldCell: this.area.getNearFieldCoordinatesForCell(centerCoordinates)){
+            sumOfAllDifferencesForThisCell += this.cells.getCell(nearFieldCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(nearFieldCell).getAsFluidCell().getLastValue();
+
         }
+        double average = sumOfAllDifferencesForThisCell/(double) this.area.getNearFieldCoordinatesForCell(centerCoordinates).size();
+        double sumOfAllDifferences = 0;
+        for (Coordinates nearFieldCell: this.area.getNearFieldCoordinatesForCell(centerCoordinates)){
+            sumOfAllDifferences +=1;
+            double difference = average - this.cells.getCell(nearFieldCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(nearFieldCell).getAsFluidCell().getLastValue();
+            if (difference > 0){
+                sumOfAllDifferences += difference;
+            } else {
+                sumOfAllDifferences -= difference;
+            }
+        }
+
 
 
 
@@ -163,7 +157,7 @@ public class SystemOfEquations implements Serializable {
             }
 
         }
-         for(Coordinates otherCell :this.area.coords) {
+         for(Coordinates otherCell :this.area.getNearFieldCoordinatesForCell(centerCoordinates)) {
             //einkommende Teilchen
             int neighborIndex = area.getListIndexForCell(otherCell);
 
@@ -182,7 +176,7 @@ public class SystemOfEquations implements Serializable {
 
              if (!otherCell.equals(centerCoordinates)){
                  //double factor = this.cells.getCell(otherCell).getLastValue()*this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles()/energySum;
-                 double factor = (this.cells.getCell(otherCell).getLastValue()*this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() - average +1)/sumOfAllDifferencesForThisCell;
+                 double factor = (this.cells.getCell(otherCell).getLastValue()*this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() - average +1)/sumOfAllDifferences;
 
                  //equations[neighborIndex][centerIndex] = factorDeci.doubleValue() * this.cells.getCell(centerCoordinates).getLastValue();
                  this.equationMatrix.set(neighborIndex,centerIndex,factor * this.cells.getCell(centerCoordinates).getLastValue());
