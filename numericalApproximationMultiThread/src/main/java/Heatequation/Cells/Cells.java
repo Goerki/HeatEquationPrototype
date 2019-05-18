@@ -540,4 +540,33 @@ public class Cells implements Serializable {
         }
       return null;
     }
+
+    public void setExistingNeighborDirections(Coordinates centerCell){
+        List<FluidCell.particleFlowSource> neighborList = new ArrayList<>();
+        for (Coordinates neighbor : this.getAllAdjacentFluidCells(centerCell)){
+            if (neighbor.equals(centerCell.getCellXPlus1())){
+                neighborList.add(FluidCell.particleFlowSource.XPLUS1);
+            }
+            if (neighbor.equals(centerCell.getCellYPlus1())){
+                neighborList.add(FluidCell.particleFlowSource.YPLUS1);
+            }
+            if (neighbor.equals(centerCell.getCellZPlus1())){
+                neighborList.add(FluidCell.particleFlowSource.ZPLUS1);
+            }
+            if (neighbor.equals(centerCell.getCellXMinus1())){
+                neighborList.add(FluidCell.particleFlowSource.XMINUS1);
+            }
+            if (neighbor.equals(centerCell.getCellYMinus1())){
+                neighborList.add(FluidCell.particleFlowSource.YMINUS1);
+            }
+            if (neighbor.equals(centerCell.getCellZMinus1())){
+                neighborList.add(FluidCell.particleFlowSource.ZMINUS1);
+            }
+
+
+        }
+        this.getCell(centerCell).getAsFluidCell().setNeighborDirections(neighborList);
+
+    }
+
 }

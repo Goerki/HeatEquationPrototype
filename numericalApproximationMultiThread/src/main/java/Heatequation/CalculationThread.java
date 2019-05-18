@@ -30,14 +30,18 @@ public class CalculationThread extends Thread implements Serializable {
         }else if (this.status==1) {
             this.overwriteOldSolidValues();
         }else if (this.status==2) {
-            this.particleFlowCalculation();
+            this.applyDiffussionAndUplift();
         }else if (this.status == 3){
-            this.overwriteOldFluidValues();
+            this.calulateInertiaParticleFlow();
         }else if (this.status == 4){
-            this.fillEquations(equationsList, fluidAreaList);
+            this.applyInertiaParticleFlow();
         }else if(this.status==5){
-            this.normalizeCells(equationsList, fluidAreaList);
+            this.overwriteOldFluidValues();
         }else if (this.status==6) {
+            this.fillEquations(equationsList, fluidAreaList);
+        }else if (this.status==7) {
+            this.normalizeCells(equationsList, fluidAreaList);
+        }else if (this.status==8) {
             this.finishNormalization();
         }
             //TODO: Change type if fluid calculation is implemented
@@ -65,8 +69,9 @@ public class CalculationThread extends Thread implements Serializable {
 
             for (Coordinates fluidCell: this.fluidCells){
                 space.allCells.getCell(fluidCell).getAsFluidCell().normalizeNumberParticlesAndTemperature();
+                space.allCells.getCell(fluidCell).getAsFluidCell().resetInertiaParticleFlow();
             }
-            this.status=4;
+            this.status=6;
         }
 
 
@@ -75,8 +80,8 @@ public class CalculationThread extends Thread implements Serializable {
         this.status=1;
     }
 
-    protected void particleFlowCalculation(){
-        space.calculateParticleFlowForCells(fluidCells);
+    protected void applyDiffussionAndUplift(){
+        space.applyDiffussionAndUpliftOnCells(fluidCells);
         this.status=3;
     }
 
@@ -105,7 +110,7 @@ public class CalculationThread extends Thread implements Serializable {
             }
 
         }
-        this.status = 5;
+        this.status = 7;
     }
 
     protected void normalizeCells(List<SystemOfEquations> equationList, List<CellArea> areaList){
@@ -137,7 +142,7 @@ public class CalculationThread extends Thread implements Serializable {
         }
 
 
-         this.status = 6;
+         this.status = 8;
 
     }
 
@@ -158,7 +163,7 @@ public class CalculationThread extends Thread implements Serializable {
 
             }
         }
-        this.status = 7;
+        this.status = 9;
     }
 
     protected void normalizeCell(Coordinates centerCell, SystemOfEquations systemOfEquations){
@@ -206,5 +211,21 @@ public class CalculationThread extends Thread implements Serializable {
         }
 
 
+    }
+
+    protected void calulateInertiaParticleFlow() {
+        for (Coordinates eachCell: this.fluidCells){
+            space.calculateInertiaParticleFlowForCell(eachCell);
+
+        }
+        this.status = 4;
+    }
+
+    protected void applyInertiaParticleFlow() {
+        for (Coordinates eachCell: this.fluidCells){
+            space.applyInertiaParticleFlowForCell(eachCell);
+
+        }
+        this.status = 5;
     }
 }

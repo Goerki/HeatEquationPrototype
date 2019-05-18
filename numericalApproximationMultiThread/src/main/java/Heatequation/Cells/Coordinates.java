@@ -59,6 +59,7 @@ public class Coordinates implements Serializable {
         return new Coordinates(this.x, this.y, this.z+1);
     }
 
+
     private static int getSmallInt(int int1, int int2){
         if (int1 > int2){
             return int2;
@@ -115,6 +116,31 @@ public class Coordinates implements Serializable {
         }
 
         return result;
+    }
+
+    public static Coordinates getCoordinatesForParticleFlowSource(Coordinates centerCell, FluidCell.particleFlowSource source){
+        switch (source){
+            case XPLUS1:{
+                return centerCell.getCellXPlus1();
+            }
+            case XMINUS1:{
+                return centerCell.getCellXMinus1();
+            }
+            case YPLUS1:{
+                return centerCell.getCellYPlus1();
+            }
+            case YMINUS1:{
+                return centerCell.getCellYMinus1();
+            }
+            case ZPLUS1:{
+                return centerCell.getCellZPlus1();
+            }
+            case ZMINUS1:{
+                return centerCell.getCellZMinus1();
+            }
+        }
+        return null;
+
     }
 
     public static FluidCell.particleFlowSource getSourceForCoordinates(Coordinates source, Coordinates target){

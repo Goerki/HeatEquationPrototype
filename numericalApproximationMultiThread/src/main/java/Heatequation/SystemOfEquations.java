@@ -32,7 +32,10 @@ public class SystemOfEquations implements Serializable {
     HeatequationLogger logger;
     private double pressure;
     private BigDecimal energySumDeci;
-
+    private double energySum;
+    Coordinates logCoords;
+    private double sumOfAllDifferences;
+    private double average;
 
     SystemOfEquations(CellArea area, Cells cells, HeatequationLogger logger){
         this.logger = logger;
@@ -43,6 +46,7 @@ public class SystemOfEquations implements Serializable {
         boundaries = new double[this.dimension];
         this.cells = cells;
         resetEquationsAndboundaries();
+        this.logCoords = new Coordinates(2,2,2);
     }
 
     private void resetEquationsAndboundaries(){
@@ -84,39 +88,59 @@ public class SystemOfEquations implements Serializable {
 
     public void setEnergySum() {
         this.energySumDeci = new BigDecimal(0);
+        this.energySum=0;
         for (Coordinates otherCell : this.area.coords) {
 
+            energySum+=this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(otherCell).getAsFluidCell().getLastValue();
                 BigDecimal energy = new BigDecimal(this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(otherCell).getAsFluidCell().getLastValue());
                 this.energySumDeci = energySumDeci.add(energy);
         }
+        this.average = energySum/(double) this.area.coords.size();
     }
 
+
+    public void calcSumOfAllDifferences(){
+        this.sumOfAllDifferences = 0;
+        for (Coordinates otherCell :this.area.coords) {
+                sumOfAllDifferences += 1;
+                double difference = this.average- (this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(otherCell).getAsFluidCell().getLastValue());
+                if (difference > 0){
+                    sumOfAllDifferences += difference;
+                } else {
+                    sumOfAllDifferences -= difference;
+                }
+        }
+    }
 
     public void addToEquations(Coordinates centerCoordinates, CellArea area){
 
 
         int centerIndex = area.getListIndexForCell(centerCoordinates);
-        List<Coordinates> adjacentCells = cells.getAllAdjacentFluidCells(centerCoordinates);
         Cell centerCell = cells.getCell(centerCoordinates);
-        Coordinates logCoords = new Coordinates(2,2,2);
 
-        if (centerCoordinates.equals(logCoords)){
+
+        if (centerCoordinates.equals(this.logCoords)){
             if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
                 this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "gotcha");
             }
 
         }
 
+/*
         BigDecimal energySumDeciForThisCell = new BigDecimal(this.energySumDeci.doubleValue());
         energySumDeciForThisCell = energySumDeciForThisCell.min(new BigDecimal(centerCell.getLastValue() * centerCell.getAsFluidCell().getLastNumberParticles()));
 
         BigDecimal average = energySumDeciForThisCell.divide(new BigDecimal(this.area.coords.size() -1), 30, RoundingMode.HALF_UP);
+        */
 
-        double sumOfAllDifferences = 0;
+
+
+        double sumOfAllDifferencesForThisCell = 0;
+
         for (Coordinates otherCell :this.area.coords) {
             if (!otherCell.equals(centerCoordinates)) {
                 sumOfAllDifferences += 1;
-                Double difference = average.min(new BigDecimal(this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(otherCell).getAsFluidCell().getLastValue())).doubleValue();
+                double difference = average- (this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(otherCell).getAsFluidCell().getLastValue());
                 if (difference > 0){
                     sumOfAllDifferences += difference;
                 } else {
@@ -131,7 +155,7 @@ public class SystemOfEquations implements Serializable {
         //ausgehende Teilchen
         //equations[centerIndex][centerIndex] = -centerCell.getLastValue()*cells.getNumberOfAdjacentFluidCells(centerCoordinates);
         equations[centerIndex][centerIndex] = -centerCell.getLastValue();
-        if (centerCoordinates.equals(logCoords)){
+        if (centerCoordinates.equals(this.logCoords)){
             if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
                 this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "value: " + centerCell.getLastValue());
             }
@@ -141,7 +165,7 @@ public class SystemOfEquations implements Serializable {
             //einkommende Teilchen
             int neighborIndex = area.getListIndexForCell(otherCell);
 
-            if (centerCoordinates.equals(logCoords)){
+            if (centerCoordinates.equals(this.logCoords)){
                 if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
                     this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "neighborCell " + otherCell.toString() + " :" + this.cells.getCell(otherCell).getLastValue() / cells.getNumberOfAdjacentFluidCells(otherCell));
                 }
@@ -157,9 +181,7 @@ public class SystemOfEquations implements Serializable {
 
              if (!otherCell.equals(centerCoordinates)){
                  //double factor = this.cells.getCell(otherCell).getLastValue()*this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles()/energySum;
-                 double factor = (this.cells.getCell(otherCell).getLastValue()*this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() - average.doubleValue() +1)/sumOfAllDifferences;
-
-                 BigDecimal factorDeci = new BigDecimal(this.cells.getCell(otherCell).getLastValue()).multiply(new BigDecimal(this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles())).divide(energySumDeci, 50, RoundingMode.HALF_UP);
+                 double factor = (this.cells.getCell(otherCell).getLastValue()*this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() - average +1)/sumOfAllDifferences;
 
                  //equations[neighborIndex][centerIndex] = factorDeci.doubleValue() * this.cells.getCell(centerCoordinates).getLastValue();
                  equations[neighborIndex][centerIndex] = factor * this.cells.getCell(centerCoordinates).getLastValue();
@@ -189,7 +211,7 @@ public class SystemOfEquations implements Serializable {
  //       equations[area.coords.size()][centerIndex] = 1/cells.getNumberOfAdjacentFluidCells(centerCoordinates);
 
         //boundaries
-        if (centerCoordinates.equals(logCoords)){
+        if (centerCoordinates.equals(this.logCoords)){
             if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
                 this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "result " + (Cells.cellSize * Cells.cellSize * Cells.cellSize / Cells.gasConstant * this.pressure - centerCell.getLastValue() * centerCell.getAsFluidCell().getLastNumberParticles()));
             }
@@ -207,13 +229,23 @@ public class SystemOfEquations implements Serializable {
         //this.getResultsforDreieck(dreieck);
 
 
+        long start = System.currentTimeMillis();
         Matrix equationMatrix = new Basic2DMatrix(this.equations);
         Vector boundaryVector = new BasicVector(this.boundaries);
 
+
         LinearSystemSolver solver = equationMatrix.withSolver(LinearAlgebra.FORWARD_BACK_SUBSTITUTION);
+
+        long duration = System.currentTimeMillis() -  start;
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO,"creation of the System with " + this.dimension + " lines took " + duration + "milliseconds");
+
+        start = System.currentTimeMillis();
         try {
             Vector result = solver.solve(boundaryVector);
 
+            duration = System.currentTimeMillis() -  start;
+
+            this.logger.logMessage(HeatequationLogger.LogLevel.INFO,"calculation of the System with " + this.dimension + " lines took " + duration + "milliseconds");
 
         for (int i =0; i< result.length(); i++){
             this.result[i] = result.get(i);

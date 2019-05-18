@@ -3,6 +3,7 @@ package Heatequation;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import Heatequation.Cells.Cells;
 import Heatequation.Cells.CellArea;
@@ -35,7 +36,7 @@ public class Space implements Serializable {
         this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
-        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
         this.sizeX= sizeX;
         this.sizeY= sizeY;
@@ -294,7 +295,7 @@ public class Space implements Serializable {
         numberCalculatedSteps++;
     }
 
-    public void calculateParticleFlowForCells(List<Coordinates> fluidCells){
+    public void applyDiffussionAndUpliftOnCells(List<Coordinates> fluidCells){
         for (Coordinates coord:fluidCells){
             this.calculateParticleFlow(coord);
         }
@@ -586,5 +587,35 @@ public class Space implements Serializable {
         }
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, builder.toString());
         return builder.toString();
+    }
+
+
+
+    public void calculateInertiaParticleFlowForCell(Coordinates centerCellCoordinates) {
+        if (centerCellCoordinates.equals(this.logCoords)){
+            //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "cell " + centerCellCoordinates.toString() + " : " + this.allCells.getCell(centerCellCoordinates).getAsFluidCell().toString());
+        }
+        this.allCells.getCell(centerCellCoordinates).getAsFluidCell().calculateInertiaParticleFlow();
+        if (logger.logLevelEnabled(HeatequationLogger.LogLevel.DEBUG)) {
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "particle flow for cell " + centerCellCoordinates.toString() + " : " + this.allCells.getCell(centerCellCoordinates).getAsFluidCell().getParticleFLow());
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "inertia particle flow calculated for cell " + centerCellCoordinates.toString() + " : " + this.allCells.getCell(centerCellCoordinates).getAsFluidCell().getInertiaParticleFlow());
+        }
+    }
+
+    public void applyInertiaParticleFlowForCell(Coordinates centerCell) {
+        if (centerCell.equals(this.logCoords) ){
+            //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "cell " + centerCell.toString() + " : " + this.allCells.getCell(centerCell).getAsFluidCell().toString());
+        }
+        Map<FluidCell.particleFlowSource, Double> particleFlowSourceDoubleMap = allCells.getCell(centerCell).getAsFluidCell().getInertiaParticleFlow();
+
+        for (FluidCell.particleFlowSource direction: particleFlowSourceDoubleMap.keySet()){
+            if (particleFlowSourceDoubleMap.get(direction) != 0) {
+
+
+                allCells.getCell(centerCell).getAsFluidCell().addToNumberParticlesAndInnerEnergy(particleFlowSourceDoubleMap.get(direction), allCells.getCell(centerCell).getAsFluidCell().getLastValue());
+                //allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().addToNumberParticlesAndInnerEnergy(particleFlowSourceDoubleMap.get(direction), allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
+                allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-particleFlowSourceDoubleMap.get(direction), allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
+            }
+        }
     }
 }

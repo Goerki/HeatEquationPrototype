@@ -55,6 +55,12 @@ public class CellArea implements Serializable {
         }
         this.calcPressure(space.allCells);
 
+        if (this.isFluid){
+            for (Coordinates coord: this.coords){
+                space.allCells.setExistingNeighborDirections(coord);
+            }
+        }
+
     }
 
     public void setAverageTemperature(Cells cells){
@@ -68,11 +74,11 @@ public class CellArea implements Serializable {
     public void calcPressure(Cells space){
         if (this.isIsobar){
             this.pressure = space.getCell(this.borderCellsWithVirtualCells.get(0)).getAsFluidCell().getPressureOfBorderCell();
-            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "area is isobar. pressure set to " + this.pressure);
+            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is isobar. pressure set to " + this.pressure);
         } else{
             this.calcAverages(space);
             this.pressure = this.particleSum*this.averageTermperature*this.normalization;
-            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "area is not isobar. pressure set to " + this.pressure +  " from particleSum " + this.particleSum + " average Temperature " + averageTermperature + " and normalization " + this.normalization);
+            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is not isobar. pressure set to " + this.pressure +  " from particleSum " + this.particleSum + " average Temperature " + averageTermperature + " and normalization " + this.normalization);
         }
     }
 

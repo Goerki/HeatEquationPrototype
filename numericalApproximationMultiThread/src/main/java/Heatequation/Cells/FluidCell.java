@@ -1,6 +1,9 @@
 package Heatequation.Cells;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class FluidCell extends Cell implements Serializable {
@@ -8,10 +11,152 @@ public class FluidCell extends Cell implements Serializable {
     private double numberParticles;
     private double lastNumberParticles;
     private VirtualFluidCell borderCell;
-    public Double[] particleFLow;
+    private Map<particleFlowSource, Double> particleFLow;
+    private Map<particleFlowSource, Double> inertiaParticleFlow;
+
+
+    public Map<particleFlowSource, Double> getParticleFLow() {
+        return particleFLow;
+    }
+
+    public Map<particleFlowSource, Double> getInertiaParticleFlow(){
+        return inertiaParticleFlow;
+    }
+
+    public void calculateInertiaParticleFlow() {
+
+        this.calculateInertiaParticleFlowInDirection(particleFlowSource.XPLUS1);
+        this.calculateInertiaParticleFlowInDirection(particleFlowSource.YPLUS1);
+        this.calculateInertiaParticleFlowInDirection(particleFlowSource.ZPLUS1);
+    }
+
+    private void calculateInertiaParticleFlowInDirection(FluidCell.particleFlowSource positiveDirection) {
+        double particleFlowInPositiveDirection = this.particleFLow.get(positiveDirection) +this.particleFLow.get(this.getOppositeDirection(positiveDirection));
+        if (particleFlowInPositiveDirection == 0){
+            return;
+        }
+
+
+        particleFlowInPositiveDirection *= -0.8;
+        FluidCell.particleFlowSource targetDirection = this.getOppositeDirectionForParticleFlow(positiveDirection);
+        if(this.directionExists(targetDirection)){
+
+            this.addInertiaParticleFlow(particleFlowInPositiveDirection*0.8, targetDirection);
+            particleFlowInPositiveDirection *= 0.2;
+        }
+        List<FluidCell.particleFlowSource> directionList =  this.neighborCellsOrthogonalTo(positiveDirection);
+        for (FluidCell.particleFlowSource direction: directionList){
+            this.addInertiaParticleFlow(particleFlowInPositiveDirection/directionList.size(), direction);
+        }
+    }
+
+    private List<particleFlowSource> neighborCellsOrthogonalTo(particleFlowSource positiveDirection) {
+        List<particleFlowSource> result = new ArrayList<>();
+        switch (positiveDirection){
+            case XPLUS1:{
+                if (this.directionExists(particleFlowSource.YPLUS1)){
+                    result.add(particleFlowSource.YPLUS1);
+                    }
+                if (this.directionExists(particleFlowSource.YMINUS1)){
+                    result.add(particleFlowSource.YMINUS1);
+                }
+                if (this.directionExists(particleFlowSource.ZPLUS1)){
+                    result.add(particleFlowSource.ZPLUS1);
+                }
+                if (this.directionExists(particleFlowSource.ZMINUS1)){
+                    result.add(particleFlowSource.ZMINUS1);
+                }
+                return result;
+            }
+            case YPLUS1:{
+                if (this.directionExists(particleFlowSource.XPLUS1)){
+                    result.add(particleFlowSource.XPLUS1);
+                }
+                if (this.directionExists(particleFlowSource.XMINUS1)){
+                    result.add(particleFlowSource.XMINUS1);
+                }
+                if (this.directionExists(particleFlowSource.ZPLUS1)){
+                    result.add(particleFlowSource.ZPLUS1);
+                }
+                if (this.directionExists(particleFlowSource.ZMINUS1)){
+                    result.add(particleFlowSource.ZMINUS1);
+                }
+                return result;
+            }
+            case ZPLUS1:{
+                if (this.directionExists(particleFlowSource.YPLUS1)){
+                    result.add(particleFlowSource.YPLUS1);
+                }
+                if (this.directionExists(particleFlowSource.YMINUS1)){
+                    result.add(particleFlowSource.YMINUS1);
+                }
+                if (this.directionExists(particleFlowSource.XPLUS1)){
+                    result.add(particleFlowSource.XPLUS1);
+                }
+                if (this.directionExists(particleFlowSource.XMINUS1)){
+                    result.add(particleFlowSource.XMINUS1);
+                }
+                return result;
+            }
+
+        }
+        return null;
+    }
+
+    private void addInertiaParticleFlow(double particleFlow, particleFlowSource direction) {
+        Double newValue =  this.inertiaParticleFlow.get(direction)+particleFlow;
+        this.inertiaParticleFlow.remove(direction);
+        this.inertiaParticleFlow.put(direction, newValue);
+    }
+
+    private boolean directionExists(particleFlowSource oppositeDirection) {
+        return this.neighborDirections.contains(oppositeDirection);
+    }
+
+    private particleFlowSource getOppositeDirectionForParticleFlow(particleFlowSource positiveDirection) {
+        switch (positiveDirection){
+            case XPLUS1:{
+                if(Math.abs(this.particleFLow.get(particleFlowSource.XPLUS1)) < Math.abs(this.particleFLow.get(particleFlowSource.XMINUS1))){
+                    return particleFlowSource.XPLUS1;
+                } else {
+                    return particleFlowSource.XMINUS1;
+                }
+            }
+            case YPLUS1:{
+                if(Math.abs(this.particleFLow.get(particleFlowSource.YPLUS1)) < Math.abs(this.particleFLow.get(particleFlowSource.YMINUS1))){
+                    return particleFlowSource.YPLUS1;
+                } else {
+                    return particleFlowSource.YMINUS1;
+                }
+            }
+            case ZPLUS1:{
+                if(Math.abs(this.particleFLow.get(particleFlowSource.ZPLUS1)) < Math.abs(this.particleFLow.get(particleFlowSource.ZMINUS1))){
+                    return particleFlowSource.ZPLUS1;
+                } else {
+                    return particleFlowSource.ZMINUS1;
+                }
+            }
+        }
+        return null;
+    }
+
+    private particleFlowSource getOppositeDirection(particleFlowSource direction){
+        switch (direction){
+            case XPLUS1: return particleFlowSource.XMINUS1;
+            case XMINUS1: return particleFlowSource.XPLUS1;
+            case YPLUS1: return particleFlowSource.YMINUS1;
+            case YMINUS1: return particleFlowSource.YPLUS1;
+            case ZPLUS1: return particleFlowSource.ZMINUS1;
+            case ZMINUS1: return particleFlowSource.ZPLUS1;
+        }
+        return null;
+    }
+
+
     public enum particleFlowSource{
         XPLUS1, XMINUS1, YPLUS1, YMINUS1, ZPLUS1, ZMINUS1
     };
+    private List<particleFlowSource> neighborDirections;
 
 
 
@@ -26,8 +171,11 @@ public class FluidCell extends Cell implements Serializable {
         calculateNumberParticlesForTempAndPressure(value, pressure);
         super.isForSolidCalculation = false;
 
-        particleFLow = new Double[6];
+        particleFLow = new HashMap<>();
+        inertiaParticleFlow = new HashMap<>();
         this.resetParticleFlow();
+        this.resetInertiaParticleFlow();
+        this.neighborDirections = new ArrayList<>();
         }
 
         public double getNusseltNumber(){
@@ -133,56 +281,34 @@ public class FluidCell extends Cell implements Serializable {
     }
 
     private void addToParticleFlow(double numberParticles, particleFlowSource source){
-        switch (source){
-            case XPLUS1: {
-                this.particleFLow[0] += numberParticles;
-                return;
-            }
-            case XMINUS1: {
-                this.particleFLow[1] += numberParticles;
-                return;
-            }
-            case YPLUS1: {
-                this.particleFLow[2] += numberParticles;
-                return;
-            }
-            case YMINUS1: {
-                this.particleFLow[3] += numberParticles;
-                return;
-            }
-            case ZPLUS1: {
-                this.particleFLow[4] += numberParticles;
-                return;
-            }
-            case ZMINUS1:{
-                this.particleFLow[5] += numberParticles;
-                return;
-            }
-        }
+        Double newValue =  this.particleFLow.get(source)+numberParticles;
+        this.particleFLow.remove(source);
+        this.particleFLow.put(source, newValue);
     }
 
     public double getParticleFlowFromSource( particleFlowSource source){
-        switch (source){
-            case XPLUS1: {
-                return this.particleFLow[0];
-            }
-            case XMINUS1:return this.particleFLow[1];
-            case YPLUS1: return this.particleFLow[2];
-            case YMINUS1:return this.particleFLow[3];
-            case ZPLUS1: return this.particleFLow[4];
-            case ZMINUS1:return this.particleFLow[5];
-        }
-        return 0;
+       return this.particleFLow.get(source);
     }
 
     public void resetParticleFlow(){
-        this.particleFLow[0]=0.;
-        this.particleFLow[1]=0.;
-        this.particleFLow[2]=0.;
-        this.particleFLow[3]=0.;
-        this.particleFLow[4]=0.;
-        this.particleFLow[5]=0.;
+        this.particleFLow.put(particleFlowSource.XPLUS1, 0.0);
+        this.particleFLow.put(particleFlowSource.XMINUS1, 0.0);
+        this.particleFLow.put(particleFlowSource.YPLUS1, 0.0);
+        this.particleFLow.put(particleFlowSource.YMINUS1, 0.0);
+        this.particleFLow.put(particleFlowSource.ZPLUS1, 0.0);
+        this.particleFLow.put(particleFlowSource.ZMINUS1, 0.0);
+
     }
+
+    public void resetInertiaParticleFlow(){
+        this.inertiaParticleFlow.put(particleFlowSource.XPLUS1, 0.0);
+        this.inertiaParticleFlow.put(particleFlowSource.XMINUS1, 0.0);
+        this.inertiaParticleFlow.put(particleFlowSource.YPLUS1, 0.0);
+        this.inertiaParticleFlow.put(particleFlowSource.YMINUS1, 0.0);
+        this.inertiaParticleFlow.put(particleFlowSource.ZPLUS1, 0.0);
+        this.inertiaParticleFlow.put(particleFlowSource.ZMINUS1, 0.0);
+    }
+
 
 
     public void addToNumberParticlesForTemperatureCalculationDuringNormalization(double particles, double temperatureParticles) {
@@ -261,4 +387,10 @@ public class FluidCell extends Cell implements Serializable {
     public double getPressureOfBorderCell() {
         return this.borderCell.getPressure();
     }
+
+
+    public void setNeighborDirections(List<particleFlowSource> neighborDirections) {
+        this.neighborDirections = neighborDirections;
+    }
+
 }
