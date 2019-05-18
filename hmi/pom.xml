@@ -1,0 +1,112 @@
+<project>
+    <parent>
+        <groupId>com.heatEquation.app</groupId>
+        <version>0.0.1</version>
+        <artifactId>heatEquation</artifactId>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.heatEquation.app</groupId>
+    <artifactId>hmi</artifactId>
+    <version>0.0.1</version>
+    <dependencies>
+        <dependency>
+            <groupId>com.heatEquation.app</groupId>
+            <artifactId>numericalApproximationMultiThread</artifactId>
+            <version>0.0.1</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.la4j</groupId>
+            <artifactId>la4j</artifactId>
+            <version>0.6.0</version>
+        </dependency>
+    </dependencies>
+    <packaging>pom</packaging>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <build>
+        <directory>${project.basedir}/target</directory>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>7</source>
+                    <target>7</target>
+                </configuration>
+            </plugin>
+        </plugins>
+        <outputDirectory>${project.build.directory}/classes</outputDirectory>
+        <finalName>${project.artifactId}-${project.version}</finalName>
+        <testOutputDirectory>${project.build.directory}/test-classes</testOutputDirectory>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src/main/resources</directory>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/src/test/resources</directory>
+            </testResource>
+        </testResources>
+        <pluginManagement>
+            <!-- NOTE: These plugins will be removed from future versions of the super POM -->
+            <!-- They are kept for the moment as they are very unlikely to conflict with lifecycle mappings (MNG-4453) -->
+            <plugins>
+
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <reporting>
+        <outputDirectory>${project.build.directory}/site</outputDirectory>
+    </reporting>
+
+    <profiles>
+        <!-- NOTE: The release profile will be removed from future versions of the super POM -->
+        <profile>
+            <id>release-profile</id>
+
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+
+</project>
