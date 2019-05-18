@@ -320,11 +320,7 @@ public class MainThread extends CalculationThread {
         }
     }
 
-    private void limitEquations() {
-        for (SystemOfEquations equations: this.equationSystemList){
-            equations.limitEquations();
-        }
-    }
+
 
     private void setAllAveragesInEquations(){
         for (SystemOfEquations eachSystem: this.equationSystemList){
