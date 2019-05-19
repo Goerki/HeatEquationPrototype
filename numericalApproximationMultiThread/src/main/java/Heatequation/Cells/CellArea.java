@@ -4,10 +4,7 @@ import Heatequation.HeatequationLogger;
 import Heatequation.Space;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class CellArea implements Serializable {
@@ -27,7 +24,9 @@ public class CellArea implements Serializable {
     private HeatequationLogger logger;
     private Map<Coordinates, List<Coordinates>> nearFieldMap;
     private Map<Coordinates, Integer> systemOfEquationsMapping;
-
+    private Map<Integer,Coordinates> coordinatesToIndexMapping;
+    private Map<Coordinates, Integer> systemOfEquationsMappingForVirtualCells;
+    private Map<Integer,Coordinates> coordinatesToIndexMappingForVirtualCells;
 
 
     public CellArea(Space space, Coordinates startCell, HeatequationLogger logger){
@@ -40,6 +39,7 @@ public class CellArea implements Serializable {
         if (this.coords.size() == 0){
             return;
         }
+
         this.logger = logger;
         this.averageTermperature = -1;
         this.particleSum = -1;
@@ -48,6 +48,7 @@ public class CellArea implements Serializable {
         this.meanValues= new double[maxY - minY];
         setYLayers();
         this.setBorderCellsWithVirtualCells(space.allCells);
+        this.setIndexCoordinatesMapping();
         if (this.borderCellsWithVirtualCells.size()==0){
             this.isIsobar = false;
             this.isIsochor = true;
@@ -167,7 +168,7 @@ public class CellArea implements Serializable {
         }
 
         int difference = 100 - result.size();
-        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "needs to add " + difference + " cells from " + nextStep.size() +" cells: " + nextStep.toString());
+        //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "needs to add " + difference + " cells from " + nextStep.size() +" cells: " + nextStep.toString());
         int range = nextStep.size();
 
         for (int i =0; i<difference; i++){
@@ -312,22 +313,31 @@ public class CellArea implements Serializable {
     }
 
     public int getListIndexForCell(Coordinates targetCell){
+        return this.systemOfEquationsMapping.get(targetCell);
+    }
+
+    public int setIndexCoordinatesMapping(){
         int i = 0;
+        this.systemOfEquationsMapping=new HashMap<>();
+        this.coordinatesToIndexMapping= new HashMap<>();
+        this.systemOfEquationsMappingForVirtualCells=new HashMap<>();
+        this.coordinatesToIndexMappingForVirtualCells= new HashMap<>();
         for (Coordinates coordinates: this.coords){
-            if (targetCell.equals(coordinates)){
-                return i;
-            }
+            this.systemOfEquationsMapping.put(coordinates, i);
+            this.coordinatesToIndexMapping.put(i, coordinates);
             i++;
         }
+        for(Coordinates virtualCells: this.borderCellsWithVirtualCells){
+            this.systemOfEquationsMappingForVirtualCells.put(virtualCells, i);
+            this.coordinatesToIndexMappingForVirtualCells.put(i, virtualCells);
+            i++;
+        }
+
         return -1;
     }
 
     public Coordinates getCoordinatesForListIndex(int index) throws Exception{
-        if (this.coords.size()>index){
-            return this.coords.get(index);
-        } else {
-            throw new Exception("corrdinates not found for index " + index + " in area " + this.coords.toString());
-        }
+        return this.coordinatesToIndexMapping.get(index);
     }
 
     public List<Coordinates> getNearFieldCoordinatesForCell(Coordinates centerCell){
@@ -335,21 +345,9 @@ public class CellArea implements Serializable {
     }
 
     public int getListIndexForVirtualCell(Coordinates centerCoordinates) {
-        int virtualCellIndex = this.getIndexOfCoordinatesInVirtualBorderCellsList(centerCoordinates);
-        return virtualCellIndex+this.coords.size();
+        return systemOfEquationsMappingForVirtualCells.get(centerCoordinates);
     }
 
-    private int getIndexOfCoordinatesInVirtualBorderCellsList(Coordinates coordinates){
-        int i=0;
-        for(Coordinates listCoordinate: this.borderCellsWithVirtualCells){
-            if (listCoordinate.equals(coordinates)){
-                return i;
-            } else {
-                i ++;
-            }
-        }
-        return -1;
-    }
 
     public boolean isBorderCell(Coordinates coordinates){
         return this.borderCellsWithVirtualCells.contains(coordinates);

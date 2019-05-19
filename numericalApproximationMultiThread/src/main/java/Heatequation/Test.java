@@ -20,9 +20,10 @@ public class Test {
     public static void main(String[] args) {
         Coordinates eins = new Coordinates(1,1,1);
         Coordinates zwei = new Coordinates(1,1,2);
-        Map<Coordinates, String> map = new HashMap<>();
+        HashMap<Coordinates, String> map = new HashMap<>();
         map.put(eins, "yay");
         map.put(zwei, "noe");
+
 
         if (!map.get(new Coordinates(1,1,1)).isEmpty()){
             System.out.print("das geht");

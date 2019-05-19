@@ -5,15 +5,9 @@ import Heatequation.Cells.CellArea;
 import Heatequation.Cells.Cells;
 import Heatequation.Cells.Coordinates;
 import Heatequation.HeatequationLogger;
-import org.apache.commons.math3.linear.*;
-import org.la4j.LinearAlgebra;
-import org.la4j.Matrix;
-import org.la4j.Vector;
-import org.la4j.linear.LinearSystemSolver;
-import org.la4j.matrix.dense.Basic2DMatrix;
-import org.la4j.operation.MatrixVectorOperation;
-import org.la4j.operation.VectorMatrixOperation;
-import org.la4j.vector.dense.BasicVector;
+import Jama.Matrix;
+
+
 
 
 import java.awt.*;
@@ -25,9 +19,8 @@ import java.util.List;
 public class SystemOfEquations implements Serializable {
 
     Matrix equationMatrix;
-    Vector boundaryVector;
-    Vector resultVector;
-    LinearSystemSolver solver;
+    Matrix boundaryVector;
+    Matrix resultVector;
 
     CellArea area;
     Cells cells;
@@ -44,10 +37,10 @@ public class SystemOfEquations implements Serializable {
         this.dimension = area.coords.size();
 
 
-        this.equationMatrix = new Basic2DMatrix(this.dimension, this.dimension);
-        this.boundaryVector = new BasicVector( this.dimension);
-        this.resultVector = new BasicVector( this.dimension);
-        this.solver = equationMatrix.withSolver(LinearAlgebra.FORWARD_BACK_SUBSTITUTION);
+        this.equationMatrix = new Matrix(this.dimension, this.dimension);
+        this.boundaryVector = new Matrix( this.dimension, 1);
+        this.resultVector =  new Matrix( this.dimension,1);
+
 
         this.cells = cells;
         resetEquationsAndboundaries();
@@ -55,12 +48,12 @@ public class SystemOfEquations implements Serializable {
     }
 
     private void resetEquationsAndboundaries(){
-        for (int i = 0; i < boundaryVector.length(); i++){
-            for (int j = 0; j < boundaryVector.length(); j++){
+        for (int i = 0; i < equationMatrix.getColumnDimension(); i++){
+            for (int j = 0; j < equationMatrix.getColumnDimension(); j++){
                 this.equationMatrix.set(i,j,0.0);
             }
-            boundaryVector.set(i, 0.0);
-            resultVector.set(i, 0.0);
+            boundaryVector.set(i,0, 0.0);
+            resultVector.set(i,0, 0.0);
         }
     }
 
@@ -195,7 +188,7 @@ public class SystemOfEquations implements Serializable {
                 this.equationMatrix.set(virtualBorderCellIndex,virtualBorderCellIndex,-centerCell.getAsFluidCell().getTemperatureOfBorderCell());
                 this.equationMatrix.set(centerIndex,virtualBorderCellIndex,centerCell.getAsFluidCell().getLastValue());
 
-                boundaryVector.set(virtualBorderCellIndex, 0.0);
+                boundaryVector.set(virtualBorderCellIndex,0, 0.0);
 
                 //equations[virtualBorderCellIndex][listIndex] = this.cells.getCell(neighborCell).getLastValue()/cells.getNumberOfAdjacentFluidCells(neighborCell);
 
@@ -216,7 +209,7 @@ public class SystemOfEquations implements Serializable {
 
         //boundaries[centerIndex] = Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant -centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles();
 
-        boundaryVector.set(centerIndex,  Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant*this.pressure -centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles());
+        boundaryVector.set(centerIndex,0,  Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant*this.pressure -centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles());
 
 
     }
@@ -232,21 +225,17 @@ public class SystemOfEquations implements Serializable {
 
 
 
-
-        long duration = System.currentTimeMillis() -  start;
-        this.logger.logMessage(HeatequationLogger.LogLevel.INFO,"creation of the System with " + this.dimension + " lines took " + duration + "milliseconds");
-
-        start = System.currentTimeMillis();
         try {
-            this.resultVector = this.solver.solve(boundaryVector);
-
-            duration = System.currentTimeMillis() -  start;
-
-            this.logger.logMessage(HeatequationLogger.LogLevel.INFO,"calculation of the System with " + this.dimension + " lines took " + duration + "milliseconds");
+            this.resultVector = this.equationMatrix.solve(boundaryVector);
 
 
 
-        System.out.print(resultVector.toString());
+            long duration = System.currentTimeMillis() -  start;
+            this.logger.logMessage(HeatequationLogger.LogLevel.INFO,"creation of the System with " + this.dimension + " lines took " + duration + "milliseconds");
+
+
+
+            System.out.print(resultVector.toString());
         } catch (Exception e) {
             System.out.print("\n\nMARIX HAT KEINEN VOLLEN RANG!!\n");
             if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
@@ -285,16 +274,16 @@ public class SystemOfEquations implements Serializable {
     }
 
     public double getResultForListIndex(int index){
-        return resultVector.get(index);
+        return resultVector.get(index,0);
     }
 
     public double getResultForCoordinates(Coordinates coord) throws Exception {
         int index = this.area.getListIndexForCell(coord);
-        return resultVector.get(index);
+        return resultVector.get(index,0);
     }
 
     public double getResultForVirtualCell(Coordinates centerCell) {
-        return resultVector.get(area.getListIndexForVirtualCell(centerCell));
+        return resultVector.get(area.getListIndexForVirtualCell(centerCell),0);
     }
 
     public void fillBorderBoundaries() {
@@ -320,7 +309,7 @@ public class SystemOfEquations implements Serializable {
         int virtualCellCounter = 1;
         double absoluteSum =0;
         double relativeSum =0;
-        for (int line =0 ; line < this.boundaryVector.length(); line++){
+        for (int line =0 ; line < this.equationMatrix.getColumnDimension(); line++){
             if (line >= this.area.coords.size()){
                 builder.append("virtual " + virtualCellCounter + " : ");
                 virtualCellCounter++;
@@ -338,17 +327,17 @@ public class SystemOfEquations implements Serializable {
                 e.printStackTrace();
             }
             }
-            for (int column =0 ; column < this.boundaryVector.length(); column++){
+            for (int column =0 ; column < this.equationMatrix.getColumnDimension(); column++){
                 builder.append(" " + this.equationMatrix.get(line, column) + " ");
             }
-            builder.append(" = " + this.boundaryVector.get(line) + " ");
-            builder.append(" Ergebnis: " + this.resultVector.get(line)+ " \n");
-            absoluteSum += this.resultVector.get(line);
+            builder.append(" = " + this.boundaryVector.get(line,0) + " ");
+            builder.append(" Ergebnis: " + this.resultVector.get(line,0)+ " \n");
+            absoluteSum += this.resultVector.get(line,0);
             if (line >= this.area.coords.size()){
 
             } else {
                 try {
-                    relativeSum += this.resultVector.get(line) / cells.getNumberOfAdjacentFluidCells(area.getCoordinatesForListIndex(line));
+                    relativeSum += this.resultVector.get(line,0) / cells.getNumberOfAdjacentFluidCells(area.getCoordinatesForListIndex(line));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
