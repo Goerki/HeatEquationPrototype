@@ -4,8 +4,7 @@ import Heatequation.HeatequationLogger;
 import Heatequation.Space;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 public class CellArea implements Serializable {
@@ -23,7 +22,11 @@ public class CellArea implements Serializable {
     private boolean isIsochor;
     private boolean isIsobar;
     private HeatequationLogger logger;
-
+    private Map<Coordinates, List<Coordinates>> nearFieldMap;
+    private Map<Coordinates, Integer> systemOfEquationsMapping;
+    private Map<Integer,Coordinates> coordinatesToIndexMapping;
+    private Map<Coordinates, Integer> systemOfEquationsMappingForVirtualCells;
+    private Map<Integer,Coordinates> coordinatesToIndexMappingForVirtualCells;
 
 
     public CellArea(Space space, Coordinates startCell, HeatequationLogger logger){
@@ -36,6 +39,7 @@ public class CellArea implements Serializable {
         if (this.coords.size() == 0){
             return;
         }
+
         this.logger = logger;
         this.averageTermperature = -1;
         this.particleSum = -1;
@@ -44,6 +48,7 @@ public class CellArea implements Serializable {
         this.meanValues= new double[maxY - minY];
         setYLayers();
         this.setBorderCellsWithVirtualCells(space.allCells);
+        this.setIndexCoordinatesMapping();
         if (this.borderCellsWithVirtualCells.size()==0){
             this.isIsobar = false;
             this.isIsochor = true;
@@ -60,6 +65,8 @@ public class CellArea implements Serializable {
                 space.allCells.setExistingNeighborDirections(coord);
             }
         }
+
+        this.getNearFieldApproximation(space);
 
     }
 
@@ -99,6 +106,93 @@ public class CellArea implements Serializable {
                 }
             }
         }
+    }
+
+    private List<Coordinates> getCoordsThatNotInArray(List<Coordinates> list, List<Coordinates> allCoordinates){
+
+        List<Coordinates> result = new ArrayList<>();
+        for (Coordinates newCoordinate: allCoordinates){
+            if (!this.isCoordinateInList(newCoordinate, list)){
+                result.add(newCoordinate);
+            }
+        }
+        return result;
+    }
+
+    private boolean isCoordinateInList(Coordinates newCoord, List<Coordinates> list){
+        for (Coordinates eachCoord: list){
+            if (newCoord.equals(eachCoord)){
+                return true;
+            }
+
+        }
+        return false;
+    }
+
+    private void getNearFieldApproximation(Space space){
+        if (!this.isFluid){
+            return;
+        }
+        this.nearFieldMap = new HashMap<>();
+        for (Coordinates eachCoord: this.coords){
+            this.nearFieldMap.put(eachCoord, this.getClosest100Cells(eachCoord, space));
+        }
+    }
+
+
+    private List<Coordinates> getClosest100Cells(Coordinates centerCell, Space space){
+        List<Coordinates> result = new ArrayList<>();
+        List<Coordinates> lastStep = new ArrayList<>();
+        List<Coordinates> nextStep = new ArrayList<>();
+
+        nextStep.addAll(space.allCells.getAllAdjacentFluidCells(centerCell));
+
+        while (result.size() + nextStep.size() < 100){
+            result.addAll(nextStep);
+            lastStep.clear();
+            lastStep.addAll(nextStep);
+            nextStep.clear();
+
+            for (Coordinates cellFromLastStep: lastStep){
+                nextStep.addAll(space.allCells.getAllAdjacentFluidCells(cellFromLastStep));
+            }
+            nextStep = this.removeDoubleEntriesFromList(nextStep);
+            nextStep = this.getCoordsThatNotInArray(result,nextStep);
+            nextStep = this.removeCoordinateFomList(nextStep, centerCell);
+
+
+            if (nextStep.isEmpty()){
+                return result;
+
+            }
+        }
+
+        int difference = 100 - result.size();
+        //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "needs to add " + difference + " cells from " + nextStep.size() +" cells: " + nextStep.toString());
+        int range = nextStep.size();
+
+        for (int i =0; i<difference; i++){
+            int randomInt = (int) (Math.random()*range);
+            while (this.isCoordinateInList(nextStep.get(randomInt), result)){
+                randomInt = (int) (Math.random()*range);
+            }
+            result.add(nextStep.get(randomInt));
+            nextStep.remove(randomInt);
+            range --;
+
+        }
+
+        return result;
+    }
+
+    private List<Coordinates> removeCoordinateFomList(List<Coordinates> nextStep, Coordinates centerCell) {
+        for (int i=0; i<nextStep.size(); i++){
+            if (centerCell.equals(nextStep.get(i))){
+                nextStep.remove(i);
+                return nextStep;
+            }
+        }
+        return nextStep;
     }
 
     public void setMeanValues(double[] values){
@@ -219,40 +313,41 @@ public class CellArea implements Serializable {
     }
 
     public int getListIndexForCell(Coordinates targetCell){
+        return this.systemOfEquationsMapping.get(targetCell);
+    }
+
+    public int setIndexCoordinatesMapping(){
         int i = 0;
+        this.systemOfEquationsMapping=new HashMap<>();
+        this.coordinatesToIndexMapping= new HashMap<>();
+        this.systemOfEquationsMappingForVirtualCells=new HashMap<>();
+        this.coordinatesToIndexMappingForVirtualCells= new HashMap<>();
         for (Coordinates coordinates: this.coords){
-            if (targetCell.equals(coordinates)){
-                return i;
-            }
+            this.systemOfEquationsMapping.put(coordinates, i);
+            this.coordinatesToIndexMapping.put(i, coordinates);
             i++;
         }
+        for(Coordinates virtualCells: this.borderCellsWithVirtualCells){
+            this.systemOfEquationsMappingForVirtualCells.put(virtualCells, i);
+            this.coordinatesToIndexMappingForVirtualCells.put(i, virtualCells);
+            i++;
+        }
+
         return -1;
     }
 
     public Coordinates getCoordinatesForListIndex(int index) throws Exception{
-        if (this.coords.size()>index){
-            return this.coords.get(index);
-        } else {
-            throw new Exception("corrdinates not found for index " + index + " in area " + this.coords.toString());
-        }
+        return this.coordinatesToIndexMapping.get(index);
+    }
+
+    public List<Coordinates> getNearFieldCoordinatesForCell(Coordinates centerCell){
+        return this.nearFieldMap.get(centerCell);
     }
 
     public int getListIndexForVirtualCell(Coordinates centerCoordinates) {
-        int virtualCellIndex = this.getIndexOfCoordinatesInVirtualBorderCellsList(centerCoordinates);
-        return virtualCellIndex+this.coords.size();
+        return systemOfEquationsMappingForVirtualCells.get(centerCoordinates);
     }
 
-    private int getIndexOfCoordinatesInVirtualBorderCellsList(Coordinates coordinates){
-        int i=0;
-        for(Coordinates listCoordinate: this.borderCellsWithVirtualCells){
-            if (listCoordinate.equals(coordinates)){
-                return i;
-            } else {
-                i ++;
-            }
-        }
-        return -1;
-    }
 
     public boolean isBorderCell(Coordinates coordinates){
         return this.borderCellsWithVirtualCells.contains(coordinates);

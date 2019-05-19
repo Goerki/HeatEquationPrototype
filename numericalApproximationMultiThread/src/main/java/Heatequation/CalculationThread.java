@@ -183,7 +183,7 @@ public class CalculationThread extends Thread implements Serializable {
 
         }
         double factor = 1/((double) systemOfEquations.area.coords.size() - 1.0);
-        for (Coordinates eachCoord: systemOfEquations.area.coords){
+        for (Coordinates eachCoord: systemOfEquations.area.getNearFieldCoordinatesForCell(centerCell)){
             if (!eachCoord.equals(centerCell)) {
                 //add temperatures and particle flow to cell
                 FluidCell adjacentCell = this.space.allCells.getCell(eachCoord).getAsFluidCell();
