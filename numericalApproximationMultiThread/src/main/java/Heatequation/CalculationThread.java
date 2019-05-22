@@ -182,13 +182,18 @@ public class CalculationThread extends Thread implements Serializable {
             }
 
         }
-        double factor = 1/((double) systemOfEquations.area.coords.size() - 1.0);
+
+        try {
+            cell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-systemOfEquations.getResultForCoordinates(centerCell), cell.getLastValue());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         for (Coordinates eachCoord: systemOfEquations.area.getNearFieldCoordinatesForCell(centerCell)){
-            if (!eachCoord.equals(centerCell)) {
-                //add temperatures and particle flow to cell
+            //add temperatures and particle flow to cell
                 FluidCell adjacentCell = this.space.allCells.getCell(eachCoord).getAsFluidCell();
                 try {
-                    cell.addToNumberParticlesForTemperatureCalculationDuringNormalization(systemOfEquations.getResultForCoordinates(eachCoord) *factor, adjacentCell.getLastValue());
+                    adjacentCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(systemOfEquations.getResultForCoordinates(eachCoord) *systemOfEquations.area.getFactorFor(centerCell, eachCoord), adjacentCell.getLastValue());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -208,9 +213,6 @@ public class CalculationThread extends Thread implements Serializable {
 
                 }
             }
-        }
-
-
     }
 
     protected void calulateInertiaParticleFlow() {

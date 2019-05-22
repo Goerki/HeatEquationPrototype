@@ -155,6 +155,8 @@ public class MainThread extends CalculationThread {
             this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "solid calculation took " + duration + " ms");
 
 
+            //for debugging purposes only
+            this.calcPressureForEachArea();
             //overwrite solid values , status 2
             start = System.currentTimeMillis();
             this.runAllThreads();
@@ -166,6 +168,9 @@ public class MainThread extends CalculationThread {
 
 
 
+            //for debugging purposes only
+            this.calcPressureForEachArea();
+
             //uplift and diffussion status 3
             start = System.currentTimeMillis();
             this.runAllThreads();
@@ -174,6 +179,9 @@ public class MainThread extends CalculationThread {
             this.space.logFluidCell("fluidCalculation ", logCoords);
             duration = System.currentTimeMillis() - start;
             this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "calculation of diffussion and uplift took " + duration + " ms");
+
+            //for debugging purposes only
+            this.calcPressureForEachArea();
 
             //calculate Inertia Particle Flow status 4
             start = System.currentTimeMillis();
@@ -184,6 +192,9 @@ public class MainThread extends CalculationThread {
             duration = System.currentTimeMillis() - start;
             this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "calculation of inertia flow took " + duration + " ms");
 
+
+            //for debugging purposes only
+            this.calcPressureForEachArea();
 
             start = System.currentTimeMillis();
             this.resetAllParticleFlows();
@@ -200,6 +211,8 @@ public class MainThread extends CalculationThread {
             duration = System.currentTimeMillis() - start;
             this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "fluid calculation took " + duration + " ms");
 
+            //for debugging purposes only
+            this.calcPressureForEachArea();
 
             //overwrite fluid values status 6
             start = System.currentTimeMillis();
@@ -209,6 +222,7 @@ public class MainThread extends CalculationThread {
             this.space.logFluidCell("fluidOverwritten ", logCoords);
             duration = System.currentTimeMillis() - start;
             this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "overwrite of fluid values took " + duration + " ms");
+
 
 
 
@@ -229,6 +243,9 @@ public class MainThread extends CalculationThread {
             duration = System.currentTimeMillis() - start;
             this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "creation and filling of equations took " + duration + " ms");
 
+
+            //for debugging purposes only
+            this.calcPressureForEachArea();
 
             //solve equations status
             start = System.currentTimeMillis();
@@ -265,7 +282,7 @@ public class MainThread extends CalculationThread {
 
 
             //for debugging purposes only
-            //this.calcPressureForEachArea();
+            this.calcPressureForEachArea();
 
 
             //overwriting old values
@@ -325,6 +342,7 @@ public class MainThread extends CalculationThread {
     private void setAllAveragesInEquations(){
         for (SystemOfEquations eachSystem: this.equationSystemList){
             eachSystem.setEnergySum();
+
         }
     }
 

@@ -23,10 +23,12 @@ public class CellArea implements Serializable {
     private boolean isIsobar;
     private HeatequationLogger logger;
     private Map<Coordinates, List<Coordinates>> nearFieldMap;
+    private Map<Coordinates, Map<Coordinates, Double>> factorMap;
     private Map<Coordinates, Integer> systemOfEquationsMapping;
     private Map<Integer,Coordinates> coordinatesToIndexMapping;
     private Map<Coordinates, Integer> systemOfEquationsMappingForVirtualCells;
     private Map<Integer,Coordinates> coordinatesToIndexMappingForVirtualCells;
+
 
 
     public CellArea(Space space, Coordinates startCell, HeatequationLogger logger){
@@ -46,6 +48,7 @@ public class CellArea implements Serializable {
         this.minY = this.setMinY();
         this.maxY = this.setMaxY();
         this.meanValues= new double[maxY - minY];
+        this.factorMap = new HashMap<>();
         setYLayers();
         this.setBorderCellsWithVirtualCells(space.allCells);
         this.setIndexCoordinatesMapping();
@@ -87,6 +90,59 @@ public class CellArea implements Serializable {
             this.pressure = this.particleSum*this.averageTermperature*this.normalization;
             this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is not isobar. pressure set to " + this.pressure +  " from particleSum " + this.particleSum + " average Temperature " + averageTermperature + " and normalization " + this.normalization);
         }
+    }
+
+    public void setFactorsForCell(Coordinates centerCell, double generalAverage, Cells cells){
+
+        /*
+        setting average for each cell
+         */
+        double average=0;
+        for (Coordinates eachCord: this.getNearFieldCoordinatesForCell(centerCell)){
+            average += cells.getCell(eachCord).getLastValue()*cells.getCell(eachCord).getAsFluidCell().getLastNumberParticles();
+        }
+        average/= this.getNearFieldCoordinatesForCell(centerCell).size();
+        //end
+
+
+
+        Map<Coordinates, Double> resut = new HashMap<>();
+        double sumOfAllDifferences =0;
+
+        List<Double> differences = new ArrayList<>();
+        double probe = 0;
+        for (Coordinates eachCord: this.getNearFieldCoordinatesForCell(centerCell)){
+            double factor = Math.abs(average - cells.getCell(eachCord).getLastValue()*cells.getCell(eachCord).getAsFluidCell().getLastNumberParticles());
+            factor += 1.0;
+            differences.add(factor);
+
+            resut.put(eachCord,factor);
+            sumOfAllDifferences += factor;
+        }
+        for (Coordinates eachCoord: this.getNearFieldCoordinatesForCell(centerCell)){
+            resut.replace(eachCoord, resut.get(eachCoord)/sumOfAllDifferences);
+            probe+= resut.get(eachCoord);
+        }
+
+        if (probe> 1.1 || probe< 0.9){
+            logger.logMessage(HeatequationLogger.LogLevel.ERROR, "factors are not correct for cell " + centerCell);
+
+        }
+
+        if (this.factorMap.containsKey(centerCell)){
+            this.factorMap.replace(centerCell, resut);
+            } else {
+            this.factorMap.put(centerCell, resut);
+        }
+    }
+
+    public double getFactorFor(Coordinates centerCell, Coordinates targetCell) throws Exception{
+        if (this.factorMap.get(centerCell).get(targetCell)!=null){
+            return this.factorMap.get(centerCell).get(targetCell);
+        } else {
+            throw new Exception("tried to get factor for flow from " + centerCell + " to " + targetCell);
+        }
+
     }
 
     public double getPressure() {
@@ -361,12 +417,12 @@ public class CellArea implements Serializable {
         this.particleSum = 0;
         this.averageTermperature = 0;
         if(this.isFluid) {
-            for (Coordinates eachCoordinate : coords) {
+            for (Coordinates eachCoordinate : this.coords) {
                 this.particleSum +=  cells.getCell(eachCoordinate).getAsFluidCell().getNumberParticles();
                 this.averageTermperature +=  cells.getCell(eachCoordinate).getAsFluidCell().getValue();
             }
         }
-        averageTermperature /= this.coords.size();
+        averageTermperature /= (double) this.coords.size();
     }
 
 

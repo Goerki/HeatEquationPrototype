@@ -35,9 +35,9 @@ public class Space implements Serializable {
     public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
         this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
-        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
-        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
         this.sizeX= sizeX;
         this.sizeY= sizeY;
@@ -397,7 +397,7 @@ public class Space implements Serializable {
     }
 
      private double calcConvectionForCell(Coordinates coordinates){
-        double baseFactor = 20;
+        double baseFactor = 1;
         baseFactor *= (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()));
         baseFactor *= this.allCells.getCell(coordinates).getAlpha()*this.allCells.getCell(coordinates).getAsFluidCell().getLastNumberParticles()*deltaT;
 
