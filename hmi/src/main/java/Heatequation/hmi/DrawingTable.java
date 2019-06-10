@@ -1,34 +1,34 @@
 package Heatequation.hmi;
 
 import Heatequation.Cells.Cell;
-import Heatequation.Cells.Cells;
+import Heatequation.Space;
 
 import javax.swing.*;
 
 public class DrawingTable extends JTable {
-    Cells cells;
+    Space space;
     String axis;
     String type;
     int numberRows;
     int numberColumns;
     int layer;
     Cell[][] drawingCells;
-    CustomRenderer tableRenderer;
+    CustomColorRenderer tableRenderer;
     JTextPane console;
 
 
-    public DrawingTable(Cells cells, String axis, int layer, String type, JTextPane console){
+    public DrawingTable(Space space, String axis, int layer, String type, JTextPane console){
         this.axis=axis;
         this.type = type;
         this.layer = layer;
-        this.cells=cells;
+        this.space=space;
         setRowAndColumnsSize();
         this.setModel(new CustomTableModel(this.numberColumns, this.numberRows));
         setCells(layer);
-        tableRenderer = new CustomRenderer(this.numberRows,this.numberColumns, console);
+        tableRenderer = new CustomColorRenderer(this.numberRows,this.numberColumns, console);
         this.console = console;
-        tableRenderer.setMaxTemp(cells.getMaximumTemperature());
-        tableRenderer.setMinTemp(cells.getMinimumTemperature());
+        tableRenderer.setMaxTemp(space.getMaximumTemperature());
+        tableRenderer.setMinTemp(space.getMinimumTemperature());
         tableRenderer.setColors(drawingCells,type);
         setTableRenderer();
     }
@@ -43,17 +43,45 @@ public class DrawingTable extends JTable {
             this.axis = axis;
             setRowAndColumnsSize();
             this.setModel(new CustomTableModel(this.numberColumns, this.numberRows));
-            tableRenderer = new CustomRenderer(this.numberRows, this.numberColumns, this.console);
-            tableRenderer.setMaxTemp(cells.getMaximumTemperature());
-            tableRenderer.setMinTemp(cells.getMinimumTemperature());
+            tableRenderer = new CustomColorRenderer(this.numberRows, this.numberColumns, this.console);
+            tableRenderer.setMaxTemp(space.getMaximumTemperature());
+            tableRenderer.setMinTemp(space.getMinimumTemperature());
 
         }
+        this.setModel(new CustomTableModel(this.numberColumns, this.numberRows));
+        tableRenderer = new CustomColorRenderer(this.numberRows, this.numberColumns, this.console);
+        tableRenderer.setMaxTemp(space.getMaximumTemperature());
+        tableRenderer.setMinTemp(space.getMinimumTemperature());
+
         this.layer=layer;
         setCells(layer);
         tableRenderer.setColors(drawingCells,type);
         setTableRenderer();
 
     }
+
+    public void updateTableWithHistory(String axis, int layer, String type, int time){
+        if (!axis.equals(this.axis)){
+            this.axis = axis;
+            setRowAndColumnsSize();
+            this.setModel(new CustomTableModel(this.numberColumns, this.numberRows));
+            tableRenderer = new CustomColorRenderer(this.numberRows, this.numberColumns, this.console);
+            tableRenderer.setMaxTemp(space.getMaximumTemperature());
+            tableRenderer.setMinTemp(space.getMinimumTemperature());
+
+        }
+        this.setModel(new CustomTableModel(this.numberColumns, this.numberRows));
+        tableRenderer = new CustomColorRenderer(this.numberRows, this.numberColumns, this.console);
+        tableRenderer.setMaxTemp(space.getMaximumTemperature());
+        tableRenderer.setMinTemp(space.getMinimumTemperature());
+
+        this.layer=layer;
+        setCellsFromHistory(layer, time);
+        tableRenderer.setColors(drawingCells,type);
+        setTableRenderer();
+
+    }
+
     private void setTableRenderer(){
         for(int column=0;column<numberColumns;column++){
             this.getColumnModel().getColumn(column).setCellRenderer(this.tableRenderer);
@@ -62,24 +90,28 @@ public class DrawingTable extends JTable {
 
     private void setRowAndColumnsSize(){
         if (axis.toLowerCase().contains("x")){
-            this.numberRows = cells.sizeY;
-            this.numberColumns=cells.sizeZ;
+            this.numberRows = space.allCells.sizeY;
+            this.numberColumns=space.allCells.sizeZ;
             return;
         }
         if (axis.toLowerCase().contains("y")){
-            this.numberRows = cells.sizeZ;
-            this.numberColumns=cells.sizeX;
+            this.numberRows = space.allCells.sizeZ;
+            this.numberColumns=space.allCells.sizeX;
             return;
         }
         if (axis.toLowerCase().contains("z")){
-            this.numberRows = cells.sizeX;
-            this.numberColumns=cells.sizeY;
+            this.numberRows = space.allCells.sizeX;
+            this.numberColumns=space.allCells.sizeY;
             return;
         }
     }
 
     public void setCells(int newLayer){
-        drawingCells = cells.getCellsForLayer(this.axis, this.layer);
+        drawingCells = space.allCells.getCellsForLayer(this.axis, this.layer);
+
+    }
+    public void setCellsFromHistory(int newLayer, int time){
+        drawingCells = space.getCellsForLayerAndTime(this.axis, newLayer, time);
 
 
     }

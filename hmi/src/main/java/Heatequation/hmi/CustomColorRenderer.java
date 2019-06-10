@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-class CustomRenderer extends DefaultTableCellRenderer{
+class CustomColorRenderer extends DefaultTableCellRenderer{
 
     int numberRows;
     int numberCols;
@@ -26,7 +26,7 @@ class CustomRenderer extends DefaultTableCellRenderer{
     JTextPane console;
 
 
-    CustomRenderer(int rows, int cols, JTextPane console){
+    CustomColorRenderer(int rows, int cols, JTextPane console){
         numberCols = cols;
         numberRows= rows;
         this.color = new Color[rows][cols];
@@ -132,6 +132,9 @@ class CustomRenderer extends DefaultTableCellRenderer{
     private Color getTemperatureColor(Cell cell){
         if(minValue == maxValue){
             return this.heatColorMap.get(getNeutralIndex());
+        }
+        if (cell.getValue() == Double.NaN){
+            return new Color(0);
         }
         return this.heatColorMap.get(getIndexForValue(cell.getValue()));
     }

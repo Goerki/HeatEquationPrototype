@@ -1,6 +1,7 @@
 package Heatequation.Cells;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +14,7 @@ public class FluidCell extends Cell implements Serializable {
     private VirtualFluidCell borderCell;
     private Map<particleFlowSource, Double> particleFLow;
     private Map<particleFlowSource, Double> inertiaParticleFlow;
+    private BigDecimal pressure;
 
 
     public Map<particleFlowSource, Double> getParticleFLow() {
@@ -178,6 +180,15 @@ public class FluidCell extends Cell implements Serializable {
         this.neighborDirections = new ArrayList<>();
         }
 
+        public double getPressure(){
+        return this.pressure.doubleValue();
+        }
+
+    public BigDecimal getPressureAsBigDecimal(){
+        return this.pressure;
+    }
+
+
         public double getNusseltNumber(){
             return this.material.getNusselt();
         }
@@ -252,9 +263,15 @@ public class FluidCell extends Cell implements Serializable {
     }
 
     private void calculateNumberParticlesForTempAndPressure(double temperature, double pressure){
+        this.pressure = BigDecimal.valueOf(pressure);
         this.numberParticles = pressure*Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant/temperature;
         this.lastNumberParticles = numberParticles;
     }
+
+    public void calculatePressure(double gasConstant, double volume){
+        this.pressure = BigDecimal.valueOf(this.value*this.numberParticles*gasConstant/volume);
+    }
+
 
     public double getNumberParticles() {
         return numberParticles;
@@ -334,6 +351,20 @@ public class FluidCell extends Cell implements Serializable {
         this.numberParticles += particles;
 
        // this.addToParticleFlow(particles, source);
+    }
+
+    public void applyPressure(double pressure, double gasConstant, double volume){
+
+        this.oldValue = pressure*volume/gasConstant/this.lastNumberParticles;
+        this.value = oldValue;
+        this.pressure=BigDecimal.valueOf(pressure);
+    }
+
+    public String verifyPressure(double pressure, double gasConstant, double volume){
+
+        double newTemp = pressure*volume/gasConstant/this.lastNumberParticles;
+        return "current temp: " + this.value + " ideal it should be " + newTemp + " thats a difference of " + (this.value-newTemp);
+
     }
 
 

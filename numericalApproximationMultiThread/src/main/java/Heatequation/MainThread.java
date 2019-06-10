@@ -2,16 +2,20 @@ package Heatequation;
 
 import Heatequation.Cells.CellArea;
 import Heatequation.Cells.Coordinates;
+import org.apache.commons.math3.analysis.function.Log;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class MainThread extends CalculationThread {
-    int numberSteps;
+    long numberSteps;
     List<CalculationThread> threads;
     List<CellArea> areas;
     List<SystemOfEquations> equationSystemList;
+    int nextStepOfSnapshot;
+    int numberSnapshots;
+
 
 
     public MainThread(Space space, List<Coordinates> solidCells,List<Coordinates> fluidCells, int numberSteps, List<CellArea> fluidAreas){
@@ -20,7 +24,8 @@ public class MainThread extends CalculationThread {
         this.threads = new ArrayList<>();
         this.areas = fluidAreas;
         this.createEquationSystems(space, this.areas);
-
+        this.numberSnapshots = space.history.length;
+        nextStepOfSnapshot = (int)this.numberSteps/this.numberSnapshots;
     }
 
 
@@ -144,146 +149,139 @@ public class MainThread extends CalculationThread {
         for (int counter = 0; counter< this.numberSteps; counter++) {
             Coordinates logCoords = new Coordinates(2,2,2);
 
-            long start = System.currentTimeMillis();
+
             this.space.logFluidCell("beginning        ", logCoords);
             //solid calculation , status 1
             this.runAllThreads();
             this.solidCalculation();
             waitSolidCalculationsReady();
             this.space.logFluidCell("afterSolid       ", logCoords);
-            long duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "solid calculation took " + duration + " ms");
+
 
 
             //for debugging purposes only
             this.calcPressureForEachArea();
             //overwrite solid values , status 2
-            start = System.currentTimeMillis();
+
             this.runAllThreads();
             this.overwriteOldSolidValues();
             waitSolidValuesOverwritten();
             this.space.logFluidCell("solidOverwritten ", logCoords);
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "solid overwrite took " + duration + " ms");
+
 
 
 
             //for debugging purposes only
-            this.calcPressureForEachArea();
+            //this.calcPressureForEachArea();
 
             //uplift and diffussion status 3
-            start = System.currentTimeMillis();
+
             this.runAllThreads();
             this.applyDiffussionAndUplift();
             waitDiffussionAndUpliftApplied();
             this.space.logFluidCell("fluidCalculation ", logCoords);
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "calculation of diffussion and uplift took " + duration + " ms");
+
 
             //for debugging purposes only
-            this.calcPressureForEachArea();
+            //this.calcPressureForEachArea();
 
             //calculate Inertia Particle Flow status 4
-            start = System.currentTimeMillis();
+
             this.runAllThreads();
             this.calulateInertiaParticleFlow();
             waitInertialParticleFlowCalculated();
             this.space.logFluidCell("fluidCalculation ", logCoords);
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "calculation of inertia flow took " + duration + " ms");
+
 
 
             //for debugging purposes only
-            this.calcPressureForEachArea();
+            //this.calcPressureForEachArea();
 
-            start = System.currentTimeMillis();
             this.resetAllParticleFlows();
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "reset of particle flow took " + duration + " ms");
+
 
             //calculate Inertia Particle Flow status 5
 
-            start = System.currentTimeMillis();
             this.runAllThreads();
             this.applyInertiaParticleFlow();
             waitInertialParticleFlowApplied();
             this.space.logFluidCell("fluidCalculation ", logCoords);
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "fluid calculation took " + duration + " ms");
+
 
             //for debugging purposes only
-            this.calcPressureForEachArea();
+            //this.calcPressureForEachArea();
 
             //overwrite fluid values status 6
-            start = System.currentTimeMillis();
             this.runAllThreads();
             this.overwriteOldFluidValues();;
             waitFluidValuesOverwriten();
             this.space.logFluidCell("fluidOverwritten ", logCoords);
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "overwrite of fluid values took " + duration + " ms");
+
 
 
 
 
             //fill all equations status 7
-            start = System.currentTimeMillis();
-            this.calcPressureForEachArea();
+            //this.calcPressureForEachArea();
             this.setAllAveragesInEquations();
 
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "calculation of pressure and averages took " + duration + " ms");
 
-            start = System.currentTimeMillis();
+
+            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "before equation");
+            this.calcPressureForEachArea();
+            this.areas.get(0).printPressureForAllCells(space);
+
             this.runAllThreads();
             this.fillEquations(this.equationSystemList, this.areas);
             //this.fillBorderBoundaries();
             waitEquationsFilled();
             this.space.logFluidCell("equationsFilled  ", logCoords);
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "creation and filling of equations took " + duration + " ms");
+
 
 
             //for debugging purposes only
-            this.calcPressureForEachArea();
+            //this.calcPressureForEachArea();
 
             //solve equations status
-            start = System.currentTimeMillis();
+
             this.solveEquations();
             if (!this.equationSystemList.isEmpty()) {
                 this.equationSystemList.get(0).draw();
             }
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "solving of the equations took " + duration + " ms");
+
 
             this.checkEquationResult(logCoords);
+            //non functional:
+            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "sum of all results: " + this.equationSystemList.get(0).getSumOfAllResults());
+
+
+            this.initializeNormalizationForAllAreas();
 
             //this.limitEquations();
 
             //calc new temperature status 8
-            start = System.currentTimeMillis();
+
             this.runAllThreads();
             this.normalizeCells(this.equationSystemList, this.areas);
             waitCellsNormalized();
             this.space.logFluidCell("cellsNormalized  ", logCoords);
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "normalizing of cells took " + duration + " ms");
+
 
 
             //overwrite old values - status 9
-            start = System.currentTimeMillis();
             this.runAllThreads();
             this.finishNormalization();
             waitNormalizationFinished();
             this.space.logFluidCell("Normalization finished  ", logCoords);
-            duration = System.currentTimeMillis() - start;
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "finishing normalization took " + duration + " ms");
 
 
 
             //for debugging purposes only
-            this.calcPressureForEachArea();
+            //this.calcPressureForEachArea();
+            this.areas.get(0).printPressureForAllCells(space);
+            //this.applyPressureForEachArea();
 
+            //this.areas.get(0).printPressureForAllCells(space);
 
             //overwriting old values
             /*
@@ -294,7 +292,7 @@ public class MainThread extends CalculationThread {
 
 */
             //end reached and restart
-            this.endOfStepReached();
+             this.endOfStepReached(counter);
         }
     }
 
@@ -330,12 +328,33 @@ public class MainThread extends CalculationThread {
         }
     }
 
+    private void initializeNormalizationForAllAreas(){
+        for (CellArea eachArea: this.areas){
+            if (eachArea.isFluid()){
+                initializeNormalizationForAllCellsInArea(eachArea);
+            }
+
+        }
+
+    }
+
     private void calcPressureForEachArea() {
         for (SystemOfEquations systemOfEquations: this.equationSystemList){
             systemOfEquations.setPressure();
+            //systemOfEquations.applyPressure();
 
         }
     }
+
+    private void applyPressureForEachArea() {
+        for (SystemOfEquations systemOfEquations: this.equationSystemList){
+            systemOfEquations.setPressure();
+            //systemOfEquations.verifyPressureForEachCell();
+            systemOfEquations.applyPressure();
+
+        }
+    }
+
 
 
 
@@ -397,11 +416,19 @@ public class MainThread extends CalculationThread {
     }
 
 
-    private void endOfStepReached(){
+    private void endOfStepReached(int stepNumber){
         this.status=0;
             space.increaseNumberCalculatedSteps();
         for (CalculationThread thread: this.threads){
             thread.status=0;
+        }
+        //DEBUG
+        this.space.allCells.calcAverages();
+        this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "global number of particles: " +this.space.allCells.getNumberParticles() );
+
+        if (stepNumber >= this.nextStepOfSnapshot){
+            this.space.saveSnapshotInHistroy();
+            this.nextStepOfSnapshot+= (int)this.numberSteps/this.numberSnapshots;
         }
     }
 

@@ -1,15 +1,13 @@
 package Heatequation;
 
 import java.io.Serializable;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import Heatequation.Cells.Cells;
-import Heatequation.Cells.CellArea;
-import Heatequation.Cells.Coordinates;
-import Heatequation.Cells.Material;
-import Heatequation.Cells.FluidCell;
+import Heatequation.Cells.*;
+import org.apache.commons.math3.analysis.function.Log;
 
 public class Space implements Serializable {
     public Cells allCells;
@@ -30,6 +28,8 @@ public class Space implements Serializable {
     public HeatequationLogger logger;
     double startingValue;
     Coordinates logCoords;
+    public VisualizationCells[] history;
+
 
 
     public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
@@ -37,7 +37,7 @@ public class Space implements Serializable {
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
-        this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
         this.sizeX= sizeX;
         this.sizeY= sizeY;
@@ -47,8 +47,14 @@ public class Space implements Serializable {
         this.cellLength = 1;
         this.startingValue = startValue;
         this.logCoords = new Coordinates(2,2,2);
+        this.initHistory(20);
+    }
 
-
+    private void initHistory(int size) {
+        history = new VisualizationCells[size];
+        for (int i=0; i<size; i++){
+            history[i] = null;
+        }
     }
 
     public double getCellLength() {
@@ -68,10 +74,29 @@ public class Space implements Serializable {
 
     }
     public double getMinimumTemperature(){
-        return allCells.getMinimumTemperature();
+        double minimum = allCells.getMinimumTemperature();
+        for (VisualizationCells hist: this.history){
+            if (hist != null){
+            if (minimum > hist.getMinimumTemperature() && hist.getMinimumTemperature() != Double.NaN) {
+                minimum = hist.getMinimumTemperature();
+            }
+
+            }
+        }
+        return minimum;
     }
     public double getMaximumTemperature(){
-        return allCells.getMaximumTemperature();
+
+        double maximum= allCells.getMaximumTemperature();
+        for (VisualizationCells hist: this.history){
+            if (hist != null){
+                if (maximum < hist.getMaximumTemperature() && hist.getMaximumTemperature() != Double.NaN){
+                    maximum = hist.getMaximumTemperature();
+
+                }
+            }
+        }
+        return maximum;
     }
 
     public String setBoundariesForCube(int x1, int y1, int z1, int x2, int y2, int z2, double constantTemperature, double heatFlow, double startingTemperature){
@@ -120,7 +145,27 @@ public class Space implements Serializable {
         //create Threads
         this.numberThreads = numberThreads;
         this.createCalculationThreads(this.numberThreads, numberSteps);
+        this.saveSnapshotInHistroy();
+
         return true;
+    }
+
+    public void saveSnapshotInHistroy(){
+
+
+        for (int i=0; i<this.history.length; i++){
+            if (this.history[i]==null){
+                this.history[i] = new VisualizationCells(this.allCells, this.calcElapsedTime());
+                return;
+
+            }
+
+        }
+
+    }
+
+    private double calcElapsedTime() {
+        return (double) this.numberCalculatedSteps*deltaT;
     }
 
 
@@ -288,8 +333,10 @@ public class Space implements Serializable {
     }
 
     public double getPercentageOfStatus(){
-        //this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\ncalculatedSteps: " + numberCalculatedSteps + " numberSteps "+ numberSteps + "bruch: " + (double)numberCalculatedSteps/(double)numberSteps);
-        return ((double)numberCalculatedSteps/(double)numberSteps * 100.0);
+        double percentage = ((double)numberCalculatedSteps/(double)numberSteps * 100.0);
+
+        return percentage;
+
     }
 
     public void increaseNumberCalculatedSteps(){
@@ -300,6 +347,10 @@ public class Space implements Serializable {
         for (Coordinates coord:fluidCells){
             this.calculateParticleFlow(coord);
         }
+    }
+
+    public int getNumberOfTimeSteps(){
+        return this.history.length;
     }
 
     private void calculateParticleFlow(Coordinates coord){
@@ -397,7 +448,7 @@ public class Space implements Serializable {
     }
 
      private double calcConvectionForCell(Coordinates coordinates){
-        double baseFactor = 1;
+        double baseFactor = 5;
         baseFactor *= (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()));
         baseFactor *= this.allCells.getCell(coordinates).getAlpha()*this.allCells.getCell(coordinates).getAsFluidCell().getLastNumberParticles()*deltaT;
 
@@ -441,6 +492,70 @@ public class Space implements Serializable {
         }
         return (cell.getArea().getMeanValueForY(coords.y) + cell.getArea().getMeanValueForY(coords.y -1) + cell.getArea().getMeanValueForY(coords.y +1))/3;
      }
+
+     public String getAverageTemperatureForTime(int time){
+         DecimalFormat f = new DecimalFormat("#0.000");
+        if (time >= this.history.length){
+            return f.format(this.allCells.getAverageTemp());
+        } else {
+            return f.format(this.history[time].getAverageTemp());
+        }
+     }
+
+     public boolean hasFluidCells(){
+         for (CellArea eachArea: this.areas){
+             if (eachArea.isFluid()){
+                 return true;
+             }
+
+         }
+         return false;
+     }
+
+    public String getNumberParticlesForTime(int time){
+        DecimalFormat f = new DecimalFormat("#0.0");
+
+
+        if(!this.hasFluidCells()){
+            return "0";
+        }
+
+        if (time >= this.history.length){
+            return f.format(this.allCells.getNumberParticles());
+        } else {
+            return f.format(this.history[time].getNumberParticles());
+        }
+    }
+
+
+    public String getMaximumTemperatureForTime(int time){
+        DecimalFormat f = new DecimalFormat("#0.000");
+        if (time >= this.history.length){
+            return f.format(this.allCells.getMaximumTemperature());
+        } else {
+            return f.format(this.history[time].getMaximumTemperature());
+        }
+    }
+
+
+    public String  getMinimumTemperatureForTime(int time){
+        DecimalFormat f = new DecimalFormat("#0.000");
+        if (time >= this.history.length){
+            return  f.format(this.allCells.getMinimumTemperature());
+        } else {
+            return  f.format(this.history[time].getMinimumTemperature());
+        }
+    }
+
+    public String getElapsedTimeForTime(int time){
+        DecimalFormat f = new DecimalFormat("#0.0");
+        if (time >= this.history.length){
+            return f.format(this.deltaT*this.numberCalculatedSteps);
+        } else {
+            return f.format(this.history[time].getElapsedTime());
+        }
+    }
+
 
 
 /*
@@ -618,5 +733,13 @@ public class Space implements Serializable {
                 allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-particleFlowSourceDoubleMap.get(direction), allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
             }
         }
+    }
+
+    public Cell[][] getCellsForLayerAndTime(String axis, int layer, int time) {
+        if (time == this.getNumberOfTimeSteps()){
+            return this.allCells.getCellsForLayer(axis, layer);
+            }
+
+            return this.history[time].getCellsForLayer(axis, layer);
     }
 }

@@ -113,23 +113,33 @@ public class CalculationThread extends Thread implements Serializable {
         this.status = 7;
     }
 
-    protected void normalizeCells(List<SystemOfEquations> equationList, List<CellArea> areaList){
-        Coordinates logCoords = new Coordinates(2,2,2);
-        //set self and initialize calculaton
+    protected void initializeNormalization(){
         for(Coordinates coords : this.fluidCells){
             try {
-                this.space.allCells.getCell(coords).getAsFluidCell().initializeNormalization(equationList.get(this.getEquationIndexForCell(areaList,this.space.allCells.getCell(coords).getAsFluidCell())).getResultForCoordinates(coords));
+                //this.space.allCells.getCell(coords).getAsFluidCell().initializeNormalization(equationList.get(this.getEquationIndexForCell(areaList,this.space.allCells.getCell(coords).getAsFluidCell())).getResultForCoordinates(coords));
+                this.space.allCells.getCell(coords).getAsFluidCell().initializeNormalization(0);
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
 
 
-
-            if (coords.equals(logCoords)){
-                this.space.logFluidCell("after initialization of normailization", logCoords);
-
+    protected void initializeNormalizationForAllCellsInArea(CellArea area){
+        for(Coordinates coords : area.coords){
+            try {
+                //this.space.allCells.getCell(coords).getAsFluidCell().initializeNormalization(equationList.get(this.getEquationIndexForCell(areaList,this.space.allCells.getCell(coords).getAsFluidCell())).getResultForCoordinates(coords));
+                this.space.allCells.getCell(coords).getAsFluidCell().initializeNormalization(0);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
+    }
+
+    protected void normalizeCells(List<SystemOfEquations> equationList, List<CellArea> areaList){
+        Coordinates logCoords = new Coordinates(2,2,2);
+        //set self and initialize calculaton
+        //this.initializeNormalization();
 
         //add each particle from neighbor cells
         for(Coordinates coords : this.fluidCells){
@@ -183,17 +193,22 @@ public class CalculationThread extends Thread implements Serializable {
 
         }
 
+        /*
         try {
             cell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-systemOfEquations.getResultForCoordinates(centerCell), cell.getLastValue());
         } catch (Exception e) {
             e.printStackTrace();
         }
+        */
 
         for (Coordinates eachCoord: systemOfEquations.area.getNearFieldCoordinatesForCell(centerCell)){
             //add temperatures and particle flow to cell
                 FluidCell adjacentCell = this.space.allCells.getCell(eachCoord).getAsFluidCell();
                 try {
-                    adjacentCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(systemOfEquations.getResultForCoordinates(eachCoord) *systemOfEquations.area.getFactorFor(centerCell, eachCoord), adjacentCell.getLastValue());
+                    double factor = systemOfEquations.area.getFactorFor(centerCell, eachCoord);
+                    //double factor = 1/((double) systemOfEquations.area.getNearFieldCoordinatesForCell(centerCell).size()+1.0);
+                    adjacentCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(systemOfEquations.getResultForCoordinates(centerCell) *factor, cell.getLastValue());
+                    cell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-systemOfEquations.getResultForCoordinates(centerCell)*factor, cell.getLastValue());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

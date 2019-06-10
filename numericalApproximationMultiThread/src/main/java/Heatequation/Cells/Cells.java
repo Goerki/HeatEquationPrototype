@@ -17,6 +17,11 @@ public class Cells implements Serializable {
     public static double gasConstant = 0.0001;
     public static double cellSize = 1;
     HeatequationLogger logger;
+    private int numberCells;
+    protected double numberParticles;
+    protected double averageTemp;
+    protected double maximumTemperature;
+    protected double minimumTemperature;
 
     public Cells(int size, double value, Material material, HeatequationLogger logger){
         this.sizeX = size;
@@ -27,6 +32,10 @@ public class Cells implements Serializable {
         initCoords();
         initAllCells(value, material);
         cellsForSolidCalculation = new ArrayList<>();
+        this.maximumTemperature=0;
+        this.minimumTemperature=0;
+        this.averageTemp=0;
+        this.numberCells=0;
 
     }
 
@@ -41,7 +50,11 @@ public class Cells implements Serializable {
 
      }
 
-     private void initAllCells(double value, Material material){
+    protected Cells() {
+
+    }
+
+    private void initAllCells(double value, Material material){
         for (Coordinates tempCoord: this.coords){
             try {
                 if (material.isFluid()) {
@@ -94,26 +107,6 @@ public class Cells implements Serializable {
             }
         }
         return result;
-    }
-
-    public double getMaximumTemperature(){
-        double maxValue = -1;
-        for(Cell cell:this.getAllCells()){
-            if (cell.getValue() >maxValue){
-                maxValue=cell.getValue();
-            }
-        }
-        return maxValue;
-    }
-
-    public double getMinimumTemperature(){
-        double minValue = 1000;
-        for(Cell cell:this.getAllCells()){
-            if (cell.getValue() <minValue){
-                minValue=cell.getValue();
-            }
-        }
-        return minValue;
     }
 
 
@@ -454,7 +447,7 @@ public class Cells implements Serializable {
     public void makeSingleFluidCell(int x, int y, int z,double value, Material material) throws Exception{
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "new fluid cell: " + x + y+ z);
 
-        this.cells[x][y][z]= new FluidCell(value, material, 1);
+        this.cells[x][y][z]= new FluidCell(value, material, 10000);
     }
 
     public String makeCubeSolidCells(int x1, int y1, int z1, int x2, int y2, int z2, Material material){
@@ -568,5 +561,69 @@ public class Cells implements Serializable {
         this.getCell(centerCell).getAsFluidCell().setNeighborDirections(neighborList);
 
     }
+    public void calcAverages(){
+        this.numberCells = sizeX*sizeY*sizeZ;
+        this.numberParticles = 0;
+        this.averageTemp =0;
+        this.minimumTemperature = 99999999;
+
+        for (int x =0;x< this.sizeX;x++){
+            for (int y =0;y< this.sizeY;y++){
+                for (int z =0;z< this.sizeZ;z++){
+                    this.averageTemp+=this.cells[x][y][z].getValue();
+                    if (this.maximumTemperature<this.cells[x][y][z].getValue()){
+                        this.maximumTemperature= this.cells[x][y][z].getValue();
+                        }
+                        if (this.minimumTemperature > this.cells[x][y][z].getValue()){
+                            this.minimumTemperature= this.cells[x][y][z].getValue();
+
+                        }
+                    if (this.cells[x][y][z].isFluid){
+                        numberParticles+=this.cells[x][y][z].getAsFluidCell().getNumberParticles();
+                    }
+                }
+            }
+        }
+        this.averageTemp /= numberCells;
+    }
+
+    public double getMaximumTemperature(){
+       if(this.maximumTemperature==0){
+           this.calcAverages();
+       }
+       return this.maximumTemperature;
+    }
+
+
+    public double getMinimumTemperature(){
+        if(this.minimumTemperature==0){
+            this.calcAverages();
+        }
+        return this.minimumTemperature;
+    }
+
+
+
+    public double getAverageTemp(){
+        if (this.averageTemp == 0){
+            this.calcAverages();
+        }
+            return this.averageTemp;
+
+    }
+
+
+    public double getNumberParticles(){
+        if (this.averageTemp == 0){
+            this.calcAverages();
+        }
+        return this.numberParticles;
+
+    }
+
+
+
+
+
 
 }

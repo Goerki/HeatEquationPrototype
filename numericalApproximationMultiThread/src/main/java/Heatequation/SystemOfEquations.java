@@ -26,7 +26,7 @@ public class SystemOfEquations implements Serializable {
     Cells cells;
     int dimension;
     HeatequationLogger logger;
-    private double pressure;
+    private BigDecimal pressure;
     private double energySum;
     Coordinates logCoords;
     private double average;
@@ -141,7 +141,10 @@ public class SystemOfEquations implements Serializable {
             }
                  //equations[neighborIndex][centerIndex] = factorDeci.doubleValue() * this.cells.getCell(centerCoordinates).getLastValue();
              try {
-                 this.equationMatrix.set(centerIndex, neighborIndex,this.area.getFactorFor(centerCoordinates, otherCell) * this.cells.getCell(otherCell).getLastValue());
+                 //this.equationMatrix.set(centerIndex, neighborIndex,this.area.getFactorFor(centerCoordinates, otherCell) * this.cells.getCell(otherCell).getLastValue());
+
+                 this.equationMatrix.set(neighborIndex, centerIndex,this.area.getFactorFor(centerCoordinates, otherCell) * centerCell.getLastValue());
+
              } catch (Exception e) {
                  e.printStackTrace();
                  this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, e.toString());
@@ -176,16 +179,16 @@ public class SystemOfEquations implements Serializable {
         //boundaries
         if (centerCoordinates.equals(this.logCoords)){
             if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
-                this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "result " + (Cells.cellSize * Cells.cellSize * Cells.cellSize / Cells.gasConstant * this.pressure - centerCell.getLastValue() * centerCell.getAsFluidCell().getLastNumberParticles()));
+                this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "result " + (Cells.cellSize * Cells.cellSize * Cells.cellSize / Cells.gasConstant * this.pressure.doubleValue() - centerCell.getLastValue() * centerCell.getAsFluidCell().getLastNumberParticles()));
             }
 
         }
 
         //boundaries[centerIndex] = Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant -centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles();
 
-        double idealerWErt= Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant*this.pressure;
+        BigDecimal idealerWErt= this.pressure.multiply(new BigDecimal(Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant));
         double istWert = centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles();
-        boundaryVector.set(centerIndex,0,  Cells.cellSize*Cells.cellSize*Cells.cellSize/Cells.gasConstant*this.pressure -centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles());
+        boundaryVector.set(centerIndex,0,  (idealerWErt.doubleValue() -centerCell.getLastValue()*centerCell.getAsFluidCell().getLastNumberParticles()));
 
 
     }
@@ -217,7 +220,15 @@ public class SystemOfEquations implements Serializable {
             if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
                 this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "\n\nMARIX HAT KEINEN VOLLEN RANG!!\n");
                 this.draw();
+                this.setResultsToZero();
             }
+        }
+
+    }
+
+    private void setResultsToZero() {
+        for (int i = 0; i < equationMatrix.getColumnDimension(); i++) {
+            resultVector.set(i, 0, 0.0);
         }
 
     }
@@ -254,6 +265,7 @@ public class SystemOfEquations implements Serializable {
     }
 
     public double getResultForCoordinates(Coordinates coord) throws Exception {
+
         int index = this.area.getListIndexForCell(coord);
         return resultVector.get(index,0);
     }
@@ -326,12 +338,35 @@ public class SystemOfEquations implements Serializable {
         return builder.toString();
 
     }
+    public double getSumOfAllResults(){
+        double sum = 0;
+        for (int i=0; i< this.resultVector.getColumnDimension(); i++){
+            sum += this.getResultForListIndex(i);
+
+        }
+        return sum;
+    }
 
 
     public void setPressure() {
         this.area.calcPressure(this.cells);
-        this.pressure = this.area.getPressure();
+        this.pressure = this.area.getBigDeciPressure();
     }
+
+    public void applyPressure() {
+        for (Coordinates eachCell: this.area.coords){
+            this.cells.getCell(eachCell).getAsFluidCell().applyPressure(pressure.doubleValue(), this.cells.gasConstant, 1);
+
+        }
+    }
+
+    public void verifyPressureForEachCell() {
+        for (Coordinates eachCell: this.area.coords){
+            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, eachCell.toString() + ": " +this.cells.getCell(eachCell).getAsFluidCell().verifyPressure(pressure.doubleValue(), this.cells.gasConstant, 1));
+
+        }
+    }
+
 
 
 /*

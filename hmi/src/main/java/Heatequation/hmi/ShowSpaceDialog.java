@@ -7,6 +7,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.event.*;
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ShowSpaceDialog extends JDialog {
     private JPanel contentPane;
@@ -18,8 +20,13 @@ public class ShowSpaceDialog extends JDialog {
     private JSlider layerSlider;
     private JTextPane currentLayerSelectionTextPane;
     private JButton saveButton;
-    private JTable table1;
+    private JTable temperatureScaletable;
     private JTextPane consoleTextPane;
+    private JPanel HeatField;
+    private JSlider timeSlider;
+    private JPanel timePanel;
+    private JPanel averagesTablePanel;
+    private TextTable averagesTable;
     private DrawingTable drawingTable;
     Space space;
 
@@ -54,6 +61,19 @@ public class ShowSpaceDialog extends JDialog {
             }
         });
 
+
+        timeSlider.setMaximum(space.getNumberOfTimeSteps());
+        timeSlider.setValue(timeSlider.getMaximum());
+
+
+        timeSlider.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                timeSliderChanged(timeSlider.getValue());
+            }
+        });
+
+
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -80,9 +100,27 @@ public class ShowSpaceDialog extends JDialog {
         drawTable();
         newAxisSelection("x");
         sliderChanged(0);
+        timeSliderChanged(timeSlider.getValue());
 
             System.out.print("reasy!");
             System.out.print("\nMaxTemp: " + this.space.getMaximumTemperature() + " MinTemp: "+ this.space.getMinimumTemperature());
+
+
+    }
+
+    private Map<String, String> getInfoMapForTime(int value) {
+        Map<String, String> result = new HashMap<>();
+        result.put("elapsed time", String.valueOf(space.getElapsedTimeForTime(value))+" sec");
+        result.put("average temperature", String.valueOf(space.getAverageTemperatureForTime(value)) + " °K");
+        if (space.hasFluidCells()){
+            result.put("Sum of al particles", String.valueOf(space.getNumberParticlesForTime(value)));
+        }
+
+        result.put("maximum temperature", String.valueOf(space.getMaximumTemperatureForTime(value))+ " °K");
+        result.put("minimum temperature", String.valueOf(space.getMinimumTemperatureForTime(value))+ " °K");
+
+        return result;
+
     }
 
     private void newTable(){
@@ -91,10 +129,10 @@ public class ShowSpaceDialog extends JDialog {
             tablePanel.remove(drawingTable);
         }
         if (tableSelecter.getSelectedIndex() == 0){
-            this.drawingTable = new DrawingTable(space.allCells, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat", consoleTextPane);
+            this.drawingTable = new DrawingTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat", consoleTextPane);
             this.tablePanel.add(this.drawingTable);
         } else if (tableSelecter.getSelectedIndex() == 2){
-            this.drawingTable = new DrawingTable(space.allCells, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "mat", consoleTextPane);
+            this.drawingTable = new DrawingTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "mat", consoleTextPane);
             this.tablePanel.add(this.drawingTable);
         }
     }
@@ -140,9 +178,26 @@ public class ShowSpaceDialog extends JDialog {
 
     private void sliderChanged(Integer newValue){
         currentLayerSelectionTextPane.setText(newValue.toString());
+
         updateTable();
         drawTable();
     }
+
+    private void timeSliderChanged(Integer newValue){
+        if (this.averagesTable != null){
+            this.averagesTablePanel.remove(averagesTable);
+
+            this.averagesTable = null;
+        }
+
+        this.averagesTable = new TextTable(this.getInfoMapForTime(timeSlider.getValue()));
+        this.averagesTablePanel.add(this.averagesTable);
+        updateTable();
+        drawTable();
+
+    }
+
+
 
     private void drawTable(){
         drawingTable.enable();
@@ -152,10 +207,11 @@ public class ShowSpaceDialog extends JDialog {
 
     private void updateTable(){
         if (materialSelected()){
-            this.drawingTable.setMinAndMaxValues(space.getMinimumTemperature(), space.getMaximumTemperature());
+
             this.drawingTable.updateTable(axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "mat");
         }else {
-            this.drawingTable.updateTable(axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat");
+            this.drawingTable.setMinAndMaxValues(space.getMinimumTemperature(), space.getMaximumTemperature());
+            this.drawingTable.updateTableWithHistory(axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat", timeSlider.getValue());
         }
         tablePanel.updateUI();
         drawingTable.updateUI();
@@ -168,5 +224,9 @@ public class ShowSpaceDialog extends JDialog {
         } else {
             return false;
         }
+    }
+
+    private void createUIComponents() {
+        // TODO: place custom component creation code here
     }
 }
