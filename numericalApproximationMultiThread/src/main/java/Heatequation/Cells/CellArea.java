@@ -475,6 +475,30 @@ public class CellArea implements Serializable {
 
 
     public void printPressureForAllCells(Space space) {
+
+
+        double tempPressure =0;
+        BigDecimal tempPressureDeci = new BigDecimal(0);
+        for (Coordinates eachCell : this.coords) {
+            space.allCells.getCell(eachCell).getAsFluidCell().calculatePressure(space.allCells.gasConstant, 1);
+            //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "pressure for cell " + eachCell.toString() + " is "+  space.getCell(eachCell).getAsFluidCell().getPressure());
+            tempPressure += space.allCells.getCell(eachCell).getAsFluidCell().getPressure();
+            tempPressureDeci = tempPressureDeci.add(space.allCells.getCell(eachCell).getAsFluidCell().getPressureAsBigDecimal());
+        }
+        tempPressureDeci = tempPressureDeci.divide(BigDecimal.valueOf(this.coords.size()), 50, RoundingMode.HALF_UP);
+
+
+        tempPressure /= this.coords.size();
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "pressure calculated to " + tempPressure + " with average pressure of all cells. absolute value: " + tempPressureDeci);
+
+        double difference = tempPressure - this.pressure;
+        BigDecimal differenceDeci = tempPressureDeci.subtract(this.pressureDeci);
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "Failure from " + difference + ". absolute value: " + differenceDeci.toString());
+
+    }
+
+
+        /*
         StringBuilder builder = new StringBuilder("Pressure: " + this.pressure + "\nPressure of each cell: \n");
         double sumOfAllDifferences = 0;
         double absoluteSumOfAllDifferences = 0;
@@ -493,7 +517,9 @@ public class CellArea implements Serializable {
         }
         this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, builder.toString());
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "sum of all differences: " + sumOfAllDifferences + " absolute: " + absoluteSumOfAllDifferences + " bigDeci: " +sumOfAllBigDeciDifferences.toString());
-    }
+        }
+        */
+
 
     public BigDecimal getBigDeciPressure() {
         return this.pressureDeci;

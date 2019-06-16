@@ -159,6 +159,7 @@ public class MainThread extends CalculationThread {
 
             this.calcPressureForEachArea();
             this.calcPressureCalculationFailureForAllEquations();
+            this.areas.get(0).printPressureForAllCells(space);
 
             //for debugging purposes only
 
@@ -182,6 +183,7 @@ public class MainThread extends CalculationThread {
             this.applyDiffussionAndUplift();
             waitDiffussionAndUpliftApplied();
             this.space.logFluidCell("fluidCalculation ", logCoords);
+            this.areas.get(0).printPressureForAllCells(space);
 
 
             //for debugging purposes only
@@ -208,6 +210,7 @@ public class MainThread extends CalculationThread {
             this.applyInertiaParticleFlow();
             waitInertialParticleFlowApplied();
             this.space.logFluidCell("fluidCalculation ", logCoords);
+            this.areas.get(0).printPressureForAllCells(space);
 
 
             //for debugging purposes only
