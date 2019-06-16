@@ -447,7 +447,7 @@ public class Cells implements Serializable {
     public void makeSingleFluidCell(int x, int y, int z,double value, Material material) throws Exception{
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "new fluid cell: " + x + y+ z);
 
-        this.cells[x][y][z]= new FluidCell(value, material, 10000);
+        this.cells[x][y][z]= new FluidCell(value, material, 1);
     }
 
     public String makeCubeSolidCells(int x1, int y1, int z1, int x2, int y2, int z2, Material material){

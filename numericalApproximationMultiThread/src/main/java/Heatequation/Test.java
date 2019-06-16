@@ -18,6 +18,14 @@ import java.util.Map;
 public class Test {
 
     public static void main(String[] args) {
+        double x = 1000.0/3435;
+
+
+
+
+
+
+
         Coordinates eins = new Coordinates(1,1,1);
         Coordinates zwei = new Coordinates(1,1,2);
         HashMap<Coordinates, String> map = new HashMap<>();

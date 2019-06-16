@@ -157,16 +157,18 @@ public class MainThread extends CalculationThread {
             waitSolidCalculationsReady();
             this.space.logFluidCell("afterSolid       ", logCoords);
 
-
+            this.calcPressureForEachArea();
+            this.calcPressureCalculationFailureForAllEquations();
 
             //for debugging purposes only
-            this.calcPressureForEachArea();
+
             //overwrite solid values , status 2
 
             this.runAllThreads();
             this.overwriteOldSolidValues();
             waitSolidValuesOverwritten();
             this.space.logFluidCell("solidOverwritten ", logCoords);
+
 
 
 
@@ -228,7 +230,8 @@ public class MainThread extends CalculationThread {
 
 
             this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "before equation");
-            this.calcPressureForEachArea();
+            //this.calcPressureForEachArea();
+            //this.calcPressureCalculationFailureForAllEquations();
             this.areas.get(0).printPressureForAllCells(space);
 
             this.runAllThreads();
@@ -354,6 +357,16 @@ public class MainThread extends CalculationThread {
 
         }
     }
+
+    private void calcPressureCalculationFailureForAllEquations() {
+        for (SystemOfEquations systemOfEquations: this.equationSystemList){
+            systemOfEquations.calcPressureCalculationFailure();
+            //systemOfEquations.verifyPressureForEachCell();
+            //systemOfEquations.applyPressure();
+
+        }
+    }
+
 
 
 

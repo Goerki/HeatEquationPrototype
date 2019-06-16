@@ -30,12 +30,15 @@ public class SystemOfEquations implements Serializable {
     private double energySum;
     Coordinates logCoords;
     private double average;
+    double pressureFailure;
+
 
 
     SystemOfEquations(CellArea area, Cells cells, HeatequationLogger logger){
         this.logger = logger;
         this.area = area;
         this.dimension = area.coords.size();
+        this.pressureFailure =0;
 
 
         this.equationMatrix = new Matrix(this.dimension, this.dimension);
@@ -364,6 +367,32 @@ public class SystemOfEquations implements Serializable {
         for (Coordinates eachCell: this.area.coords){
             this.logger.logMessage(HeatequationLogger.LogLevel.INFO, eachCell.toString() + ": " +this.cells.getCell(eachCell).getAsFluidCell().verifyPressure(pressure.doubleValue(), this.cells.gasConstant, 1));
 
+        }
+    }
+
+    public void calcPressureCalculationFailure() {
+        this.pressureFailure += this.area.getPressureCalculationFailure(this.cells);
+
+        double difference = this.pressure.doubleValue() +(pressureFailure/(double)this.dimension);
+
+
+        if (difference!= this.pressure.doubleValue()){
+            this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "difference is big enough: " + pressureFailure/(double)this.dimension + "adds to "+ (this.pressure.doubleValue() +(pressureFailure/(double)this.dimension))+" pressure changed from " + this.pressure.doubleValue() + " to " + (this.pressure.doubleValue() + (pressureFailure/(double)this.dimension)));
+            String xString = String.valueOf(this.pressureFailure);
+            StringBuilder builder;
+            if (xString.charAt(0)== '-'){
+                builder = new StringBuilder("-0");
+                builder.append(xString.substring(2));
+            } else {
+                builder = new StringBuilder("0");
+                builder.append(xString.substring(1));
+            }
+            double newpressureFailure = Double.parseDouble(builder.toString());
+
+            this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "failure from: "+this.pressureFailure + " to " + newpressureFailure) ;
+            this.pressureFailure = newpressureFailure;
+        } else {
+            this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "difference is 0. Combined Failure: " + (-1*this.pressureFailure));
         }
     }
 

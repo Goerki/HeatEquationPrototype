@@ -90,11 +90,12 @@ public class CellArea implements Serializable {
             this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is isobar. pressure set to " + this.pressure);
         } else{
 
-            this.calcAverages(space);
-            this.pressure = this.particleSum*this.averageTermperature*this.normalization;
-            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is not isobar. Old pressure set to " + this.pressure +  " from particleSum " + this.particleSum + " average Temperature " + averageTermperature + " and normalization " + this.normalization);
+            //this.calcAverages(space);
+            //this.pressure = this.particleSum*this.averageTermperature*this.normalization;
+            //this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is not isobar. Old pressure set to " + this.pressure +  " from particleSum " + this.particleSum + " average Temperature " + averageTermperature + " and normalization " + this.normalization);
 
             if(this.isFluid) {
+                /*
                 double energySum = 0;
                 for (Coordinates eachCell : this.coords) {
                     energySum += space.getCell(eachCell).getAsFluidCell().getValue();
@@ -104,10 +105,12 @@ public class CellArea implements Serializable {
 
                 this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is not isobar. NEW pressure set to " + this.pressure +  " from energySum " + energySum);
 
+*/
                 this.pressure =0;
                 this.pressureDeci = new BigDecimal(0);
                 for (Coordinates eachCell : this.coords) {
                     space.getCell(eachCell).getAsFluidCell().calculatePressure(space.gasConstant, 1);
+                    //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "pressure for cell " + eachCell.toString() + " is "+  space.getCell(eachCell).getAsFluidCell().getPressure());
                     pressure += space.getCell(eachCell).getAsFluidCell().getPressure();
                     pressureDeci = pressureDeci.add(space.getCell(eachCell).getAsFluidCell().getPressureAsBigDecimal());
                 }
@@ -453,6 +456,21 @@ public class CellArea implements Serializable {
             }
         }
         averageTermperature /= (double) this.coords.size();
+    }
+
+    public double getPressureCalculationFailure(Cells cells){
+
+        double sumOfAllDifferences = 0;
+        double absoluteSumOfAllDifferences = 0;
+        BigDecimal sumOfAllBigDeciDifferences = BigDecimal.valueOf(0);
+        for (Coordinates eachCell: this.coords){
+            //double eachPressure = space.allCells.getCell(eachCell).getValue()*space.allCells.getCell(eachCell).getAsFluidCell().getNumberParticles()*space.allCells.gasConstant;
+            double eachPressure = cells.getCell(eachCell).getAsFluidCell().getPressure();
+            double difference = this.pressure - eachPressure;
+            sumOfAllDifferences += difference;
+        }
+
+        return sumOfAllDifferences;
     }
 
 
