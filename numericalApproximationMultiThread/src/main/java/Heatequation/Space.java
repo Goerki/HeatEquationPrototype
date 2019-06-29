@@ -34,10 +34,10 @@ public class Space implements Serializable {
 
     public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
         this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
-        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
-        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
         this.sizeX= sizeX;
         this.sizeY= sizeY;
@@ -46,7 +46,7 @@ public class Space implements Serializable {
         this.numberThreads=numberThreads;
         this.cellLength = 1;
         this.startingValue = startValue;
-        this.logCoords = new Coordinates(2,2,2);
+        this.logCoords = new Coordinates(1,4,2);
         this.initHistory(20);
     }
 
@@ -133,7 +133,7 @@ public class Space implements Serializable {
             return false;
 
         this.isInitialized=true;
-        this.allCells.createAllVirtualBorderCells(this.startingValue);
+        this.allCells.createAllVirtualBorderCells(this.startingValue, this.cellLength*this.cellLength*this.cellLength/allCells.gasConstant);
         this.createAreas();
         this.deltaT = deltaT;
         this.numberCalculatedSteps = 0;
@@ -354,10 +354,13 @@ public class Space implements Serializable {
     }
 
     private void calculateParticleFlow(Coordinates coord){
+        if (coord.equals(logCoords)){
+            System.out.print(logCoords.toString());
+        }
         double diffusion = this.calcDiffusionForCell(coord);
 
         double convection = this.calcConvectionForCell(coord);
-        //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "diffussion: " + diffusion);
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, coord.toString() + ": diffussion: " + diffusion);
         for(Coordinates neighbor:allCells.getAllAdjacentFluidCells(coord)){
             this.particleFlowFromTo(coord, neighbor, diffusion);
             if (coord.equals(logCoords)){
@@ -369,10 +372,12 @@ public class Space implements Serializable {
 
 
         allCells.getCell(coord).getAsFluidCell().calcDiffussionToBorderCell(diffusion);
-        if (allCells.getCell(coord).getAsFluidCell().hasBorderCellOnTop()) {
-            //TODO: Convection over top
+        if (allCells.getCell(coord).getAsFluidCell().isBorderCell()) {
+            allCells.getCell(coord).getAsFluidCell().calcDiffussionFromBorderCell(this.calcDiffusionForVirtualBorderCell(coord));
+            this.calcConvectionFlowFromCellToBorderCell(coord, convection);
         }
-            //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "convection: " + convection);
+
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, coord.toString()+": convection: " + convection);
 
             this.calcConvectionFlowFromCell(coord, convection);
 
@@ -391,7 +396,7 @@ public class Space implements Serializable {
             double diff = allCells.getCell(coord).getAsFluidCell().getLastNumberParticles() - allCells.getCell(coord).getAsFluidCell().getNumberParticles();
             this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "flow for " + coord.toString() + " : " + diff + " for lasNumberPart " + allCells.getCell(coord).getAsFluidCell().getLastNumberParticles());
             this.logFluidCell("after convection", coord);
-            this.logFluidCell("y+1 convection", coord.getCellYPlus1());
+            //this.logFluidCell("y+1 convection", coord.getCellYPlus1());
         }
 
 
@@ -432,9 +437,74 @@ public class Space implements Serializable {
         }
     }
 
+
+    private void calcConvectionFlowFromCellToBorderCell(Coordinates coord, double convection) {
+        if (allCells.getCell(coord).getAsFluidCell().isBorderCell() && allCells.getCell(coord).getAsFluidCell().hasBorderCellOnTop()) {
+            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), FluidCell.particleFlowSource.YMINUS1);
+            return;
+        } else if (allCells.getCell(coord).getAsFluidCell().isBorderCell() && allCells.getCell(coord).getAsFluidCell().hasBorderCellOnBottom()) {
+            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), FluidCell.particleFlowSource.YMINUS1);
+            return;
+        } else {
+            /*
+            TODO: Convection for border cells in the same layer
+            int numberAdjacentCellsInThisLayer = 0;
+            List<Coordinates> neighborsInThisLayer = this.allCells.getAllAdjacentFluidCells(coord);
+
+            if (allCells.cellExists(coord.getCellYMinus1()) && allCells.getCell(coord.getCellYMinus1()).isFluid()) {
+                int removeIndex = 0;
+                for (Coordinates anyCoord : neighborsInThisLayer) {
+                    if (anyCoord.equals(coord.getCellYMinus1())) {
+                        removeIndex = neighborsInThisLayer.indexOf(anyCoord);
+                        break;
+                    }
+
+                }
+                neighborsInThisLayer.remove(removeIndex);
+            }
+
+            numberAdjacentCellsInThisLayer = neighborsInThisLayer.size();
+            convection /= (double) numberAdjacentCellsInThisLayer;
+            for(Coordinates neighbor: neighborsInThisLayer){
+                this.particleFlowFromTo(coord, neighbor, convection);
+            }
+
+
+
+
+
+             */
+
+        }
+    }
+
+
+    /**
+     * Calculate the amount of particles that will flow over each border
+     * @param cell
+     * @return
+     */
     private double calcDiffusionForCell(Coordinates cell){
         double baseFactor = 0.075;
-        return baseFactor*allCells.getCell(cell).getLastValue()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getLastNumberParticles();
+        baseFactor *=allCells.getCell(cell).getLastValue()*allCells.getCell(cell).getAlpha();
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "basefactor for temp and material" + cell.toString() + ": " + baseFactor);
+        baseFactor *=deltaT;
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "basefactor for delta T" + cell.toString() + ": " + baseFactor);
+        baseFactor *= allCells.getCell(cell).getAsFluidCell().getLastNumberParticles();
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "basefactor for number particles" + cell.toString() + ": " + baseFactor);
+
+        return baseFactor;
+        //return baseFactor*allCells.getCell(cell).getLastValue()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getLastNumberParticles();
+    }
+
+    /**
+     * Calculate the amount of particles that will flow over each border
+     * @param cell
+     * @return
+     */
+    private double calcDiffusionForVirtualBorderCell(Coordinates cell){
+        double baseFactor = 0.075;
+        return baseFactor*allCells.getCell(cell).getAsFluidCell().getTemperatureOfBorderCell()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getNumberParticlesOfSingleVirtualCell();
     }
 
 

@@ -32,6 +32,14 @@ public class FluidCell extends Cell implements Serializable {
         this.calculateInertiaParticleFlowInDirection(particleFlowSource.ZPLUS1);
     }
 
+    private List<particleFlowSource> getBordercellDirections(){
+        List<particleFlowSource> result = new ArrayList<>();
+        if (!this.isBorderCell()){
+            return result;
+        }
+        return this.borderCell.getDirections();
+    }
+
     private void calculateInertiaParticleFlowInDirection(FluidCell.particleFlowSource positiveDirection) {
         double particleFlowInPositiveDirection = this.particleFLow.get(positiveDirection) +this.particleFLow.get(this.getOppositeDirection(positiveDirection));
         if (particleFlowInPositiveDirection == 0){
@@ -154,6 +162,24 @@ public class FluidCell extends Cell implements Serializable {
         return null;
     }
 
+    public double getNumberParticlesOfSingleVirtualCell() {
+        return this.numberParticles;
+    }
+
+    public void calcDiffussionFromBorderCell(double calcDiffusionForVirtualBorderCell) {
+        this.addToNumberParticlesAndInnerEnergy(calcDiffusionForVirtualBorderCell * borderCell.getNumberBorders(), borderCell.getTemperature());
+    }
+
+    public boolean hasBorderCellOnBottom() {
+        if (this.isBorderCell()){
+            return this.borderCell.isOnBottom();
+
+        }
+        else {
+            return false;
+        }
+    }
+
 
     public enum particleFlowSource{
         XPLUS1, XMINUS1, YPLUS1, YMINUS1, ZPLUS1, ZMINUS1
@@ -193,14 +219,14 @@ public class FluidCell extends Cell implements Serializable {
             return this.material.getNusselt();
         }
 
-        public void setBorderCell(int numberBorders, double temperature){
+        public void setBorderCell(int numberBorders, double temperature, double gasConstant, List<FluidCell.particleFlowSource> neighborDirections){
         if(numberBorders==0){
             return;
         }
 
 
 
-        this.borderCell = new VirtualFluidCell(numberBorders, temperature);
+        this.borderCell = new VirtualFluidCell(numberBorders, temperature, gasConstant, neighborDirections);
         }
 
         public int getNumberOfVirtualBorders(){
@@ -216,10 +242,23 @@ public class FluidCell extends Cell implements Serializable {
         }
 
 
+        /*
+
+
+        FluidCell.particleFlowSource direction = Coordinates.getSourceForCoordinates(source, target);
+        allCells.getCell(source).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-amount, allCells.getCell(target).getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
+        allCells.getCell(target).getAsFluidCell().addToNumberParticlesAndInnerEnergy(amount, allCells.getCell(source).getLastValue(), direction);
+
+         */
+
         public void calcDiffussionToBorderCell(double amount){
         if (this.isBorderCell()) {
-            this.addToNumberParticlesAndInnerEnergy(-amount * borderCell.getNumberBorders(), this.oldValue);
-            this.addToNumberParticlesAndInnerEnergy(amount * borderCell.getNumberBorders(), borderCell.getTemperature());
+            for (particleFlowSource source: this.getBordercellDirections()){
+                this.addToNumberParticlesAndInnerEnergy(-amount, this.oldValue, source);
+            }
+
+
+            //this.addToNumberParticlesAndInnerEnergy(amount * borderCell.getNumberBorders(), borderCell.getTemperature());
 
         } else{
             return;

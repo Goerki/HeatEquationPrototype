@@ -46,7 +46,7 @@ public class MainThread extends CalculationThread {
     }
 
     private void waitSolidCalculationsReady(){
-        while (!statusReached(1)){
+        while (!statusReached(status.SOLID_OVERWRITE)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -57,7 +57,18 @@ public class MainThread extends CalculationThread {
     }
 
     private void waitSolidValuesOverwritten(){
-        while (!statusReached(2)){
+        while (!statusReached(status.INITIALIZE_PARTICLEFLOW)){
+            try {
+                TimeUnit.MICROSECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return;
+    }
+
+    private void waitParticleFlowCalculationInitialized(){
+        while (!statusReached(status.APPLY_DIFF_AND_UPLIFT)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -68,7 +79,7 @@ public class MainThread extends CalculationThread {
     }
 
     private void waitDiffussionAndUpliftApplied(){
-        while (!statusReached(3)){
+        while (!statusReached(status.CALCULATE_INERTIA)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -79,7 +90,7 @@ public class MainThread extends CalculationThread {
     }
 
     private void waitFluidValuesOverwriten(){
-        while (!statusReached(6)){
+        while (!statusReached(status.FILL_EQUATIONS)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -91,7 +102,7 @@ public class MainThread extends CalculationThread {
 
 
     private void waitEquationsFilled(){
-        while (!statusReached(7)){
+        while (!statusReached(status.NORMAILZE_CELLS)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -102,7 +113,7 @@ public class MainThread extends CalculationThread {
     }
 
     private void waitOverwritingOldValuesReady(){
-        while (!statusReached(6)){
+        while (!statusReached(status.FINISH)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -113,7 +124,7 @@ public class MainThread extends CalculationThread {
     }
 
     private void waitCellsNormalized(){
-        while (!statusReached(8)){
+        while (!statusReached(status.FINISH)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -125,7 +136,7 @@ public class MainThread extends CalculationThread {
 
 
     private void waitNormalizationFinished(){
-        while (!statusReached(9)){
+        while (!statusReached(status.SOLID_CALC)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -135,7 +146,7 @@ public class MainThread extends CalculationThread {
         return;
     }
 
-    private boolean statusReached(int state){
+    private boolean statusReached(CalculationThread.status state){
         for(CalculationThread thread: this.threads){
             if (thread.status != state){
                 return false;
@@ -170,6 +181,11 @@ public class MainThread extends CalculationThread {
             waitSolidValuesOverwritten();
             this.space.logFluidCell("solidOverwritten ", logCoords);
 
+
+            this.runAllThreads();
+            this.initParticleFlowCalculation();
+            waitParticleFlowCalculationInitialized();
+            this.space.logFluidCell("flow initialized ", logCoords);
 
 
 
@@ -303,7 +319,7 @@ public class MainThread extends CalculationThread {
     }
 
     private void waitInertialParticleFlowApplied() {
-        while (!statusReached(5)){
+        while (!statusReached(status.FLUID_OVERWRITE)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -314,7 +330,7 @@ public class MainThread extends CalculationThread {
     }
 
     private void waitInertialParticleFlowCalculated() {
-        while (!statusReached(4)){
+        while (!statusReached(status.APPLY_INERTIA)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -363,10 +379,12 @@ public class MainThread extends CalculationThread {
 
     private void calcPressureCalculationFailureForAllEquations() {
         for (SystemOfEquations systemOfEquations: this.equationSystemList){
-            systemOfEquations.calcPressureCalculationFailure();
-            //systemOfEquations.verifyPressureForEachCell();
-            //systemOfEquations.applyPressure();
+            if (!systemOfEquations.isIsobar()) {
+                systemOfEquations.calcPressureCalculationFailure();
+                //systemOfEquations.verifyPressureForEachCell();
+                //systemOfEquations.applyPressure();
 
+            }
         }
     }
 
@@ -433,10 +451,10 @@ public class MainThread extends CalculationThread {
 
 
     private void endOfStepReached(int stepNumber){
-        this.status=0;
+        this.status=status.SOLID_CALC;
             space.increaseNumberCalculatedSteps();
         for (CalculationThread thread: this.threads){
-            thread.status=0;
+            thread.status=status.SOLID_CALC;
         }
         //DEBUG
         this.space.allCells.calcAverages();

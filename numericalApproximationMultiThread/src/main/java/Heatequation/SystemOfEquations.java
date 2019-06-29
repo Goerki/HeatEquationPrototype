@@ -37,7 +37,7 @@ public class SystemOfEquations implements Serializable {
     SystemOfEquations(CellArea area, Cells cells, HeatequationLogger logger){
         this.logger = logger;
         this.area = area;
-        this.dimension = area.coords.size();
+        this.dimension = area.coords.size() + area.getborderCellsWithVirtualCells().size();
         this.pressureFailure =0;
 
 
@@ -154,25 +154,33 @@ public class SystemOfEquations implements Serializable {
              }
              //this.equationMatrix.set(centerIndex,neighborIndex,this.area.getFactorFor(centerCoordinates,otherCell) * this.cells.getCell(otherCell).getLastValue());
 
+             //virtual bordercells einkommend
+             int virtualBorderCellIndex = -1;
+             if (cells.getCell(otherCell).getAsFluidCell().isBorderCell()) {
+                 virtualBorderCellIndex = area.getListIndexForVirtualCell(otherCell);
+                 //equations[centerIndex][virtualBorderCellIndex] = centerCell.getAsFluidCell().getTemperatureOfBorderCell() * centerCell.getAsFluidCell().getNumberOfVirtualBorders();
+                 this.equationMatrix.set(virtualBorderCellIndex, centerIndex,this.area.getFactorForVirtualCells(centerCoordinates, otherCell) * centerCell.getLastValue());
+
+                 //virtual cell ausgehend ... N1T1 = N2T2
+                 this.equationMatrix.set(virtualBorderCellIndex,virtualBorderCellIndex,-this.cells.getCell(otherCell).getAsFluidCell().getTemperatureOfBorderCell());
+                 //this.equationMatrix.set(centerIndex,virtualBorderCellIndex,centerCell.getAsFluidCell().getLastValue());
+
+                 boundaryVector.set(virtualBorderCellIndex,0, 0.0);
+
+                 //equations[virtualBorderCellIndex][listIndex] = this.cells.getCell(neighborCell).getLastValue()/cells.getNumberOfAdjacentFluidCells(neighborCell);
+
+             }
+
+        }
+
+        if (centerCell.getAsFluidCell().isBorderCell()){
+            this.equationMatrix.set(centerIndex, area.getListIndexForVirtualCell(centerCoordinates),centerCell.getAsFluidCell().getTemperatureOfBorderCell());
+
         }
 
 
 
-            //virtual bordercells einkommend
-            int virtualBorderCellIndex = -1;
-            if (centerCell.getAsFluidCell().isBorderCell()) {
-                virtualBorderCellIndex = area.getListIndexForVirtualCell(centerCoordinates);
-                //equations[centerIndex][virtualBorderCellIndex] = centerCell.getAsFluidCell().getTemperatureOfBorderCell() * centerCell.getAsFluidCell().getNumberOfVirtualBorders();
 
-                //virtual cell ausgehend ... N1T1 = N2T2
-                this.equationMatrix.set(virtualBorderCellIndex,virtualBorderCellIndex,-centerCell.getAsFluidCell().getTemperatureOfBorderCell());
-                this.equationMatrix.set(centerIndex,virtualBorderCellIndex,centerCell.getAsFluidCell().getLastValue());
-
-                boundaryVector.set(virtualBorderCellIndex,0, 0.0);
-
-                //equations[virtualBorderCellIndex][listIndex] = this.cells.getCell(neighborCell).getLastValue()/cells.getNumberOfAdjacentFluidCells(neighborCell);
-
-            }
 
 
 
@@ -219,7 +227,7 @@ public class SystemOfEquations implements Serializable {
 
             System.out.print(resultVector.toString());
         } catch (Exception e) {
-            System.out.print("\n\nMARIX HAT KEINEN VOLLEN RANG!!\n");
+            System.out.print("\n\nMAtRIX HAT KEINEN VOLLEN RANG!!\n");
             if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
                 this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "\n\nMARIX HAT KEINEN VOLLEN RANG!!\n");
                 this.draw();
@@ -394,6 +402,10 @@ public class SystemOfEquations implements Serializable {
         } else {
             this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "difference is 0. Combined Failure: " + (-1*this.pressureFailure));
         }
+    }
+
+    public boolean isIsobar() {
+        return this.area.isIsobar();
     }
 
 

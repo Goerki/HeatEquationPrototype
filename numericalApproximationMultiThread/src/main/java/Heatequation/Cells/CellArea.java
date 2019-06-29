@@ -10,6 +10,8 @@ import java.util.*;
 
 
 public class CellArea implements Serializable {
+    private double pressureDivergence;
+    private double energyPerCell;
     private boolean isFluid;
     public List<Coordinates> coords;
     private List<List<Coordinates>> yLayers;
@@ -27,7 +29,9 @@ public class CellArea implements Serializable {
     private HeatequationLogger logger;
     private Map<Coordinates, List<Coordinates>> nearFieldMap;
     private Map<Coordinates, Map<Coordinates, Double>> factorMap;
-    private Map<Coordinates, Integer> systemOfEquationsMapping;
+    private Map<Coordinates, Map<Coordinates, Double>> factorsForVirtualBorderCells;
+    private Map<Coordinates, Integer> sizeNearField;
+     private Map<Coordinates, Integer> systemOfEquationsMapping;
     private Map<Integer,Coordinates> coordinatesToIndexMapping;
     private Map<Coordinates, Integer> systemOfEquationsMappingForVirtualCells;
     private Map<Integer,Coordinates> coordinatesToIndexMappingForVirtualCells;
@@ -52,6 +56,7 @@ public class CellArea implements Serializable {
         this.maxY = this.setMaxY();
         this.meanValues= new double[maxY - minY];
         this.factorMap = new HashMap<>();
+        this.factorsForVirtualBorderCells = new HashMap<>();
         setYLayers();
         this.setBorderCellsWithVirtualCells(space.allCells);
         this.setIndexCoordinatesMapping();
@@ -87,6 +92,8 @@ public class CellArea implements Serializable {
     public void calcPressure(Cells space){
         if (this.isIsobar){
             this.pressure = space.getCell(this.borderCellsWithVirtualCells.get(0)).getAsFluidCell().getPressureOfBorderCell();
+            this.energyPerCell = this.pressure / space.gasConstant*space.cellSize*space.cellSize*space.cellSize;
+            this.pressureDeci = new BigDecimal(this.pressure);
             this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is isobar. pressure set to " + this.pressure);
         } else{
 
@@ -134,11 +141,18 @@ public class CellArea implements Serializable {
         double average=0;
         for (Coordinates eachCord: this.getNearFieldCoordinatesForCell(centerCell)){
             average += cells.getCell(eachCord).getLastValue()*cells.getCell(eachCord).getAsFluidCell().getLastNumberParticles();
+            if (cells.getCell(eachCord).getAsFluidCell().isBorderCell()){
+                for (int i=0; i < cells.getCell(eachCord).getAsFluidCell().getNumberOfVirtualBorders(); i++) {
+                    average+= cells.getCell(eachCord).getAsFluidCell().getTemperatureOfBorderCell() * cells.getCell(eachCord).getAsFluidCell().getNumberParticlesOfSingleVirtualCell();
+
+                }
+            }
         }
-        average/= this.getNearFieldCoordinatesForCell(centerCell).size();
+        average/= this.getSizeOfNearFieldCoordinatesForCell(centerCell);
         //end
 
         Map<Coordinates, Double> result = new HashMap<>();
+        Map<Coordinates, Double> resultForVirtualCells = new HashMap<>();
         double sumOfAllDifferences =0;
 
         List<Double> differences = new ArrayList<>();
@@ -150,12 +164,27 @@ public class CellArea implements Serializable {
 
             result.put(eachCord,factor);
             sumOfAllDifferences += factor;
+            if (cells.getCell(eachCord).getAsFluidCell().isBorderCell()){
+                double virtualFactor=0;
+                for (int i=0; i < cells.getCell(eachCord).getAsFluidCell().getNumberOfVirtualBorders(); i++) {
+                    virtualFactor= Math.abs(average - cells.getCell(eachCord).getAsFluidCell().getTemperatureOfBorderCell() * cells.getCell(eachCord).getAsFluidCell().getNumberParticlesOfSingleVirtualCell());
+                    virtualFactor += 1.0;
+                    sumOfAllDifferences += virtualFactor;
+                }
+                resultForVirtualCells.put(eachCord, virtualFactor);
+
+            }
         }
         //add one to make the equation system solveable
         sumOfAllDifferences += Math.abs(average - cells.getCell(centerCell).getLastValue()*cells.getCell(centerCell).getAsFluidCell().getLastNumberParticles())+1.0;
         for (Coordinates eachCoord: this.getNearFieldCoordinatesForCell(centerCell)){
             result.replace(eachCoord, result.get(eachCoord)/sumOfAllDifferences);
             probe+= result.get(eachCoord);
+            if (cells.getCell(eachCoord).getAsFluidCell().isBorderCell()){
+                resultForVirtualCells.replace(eachCoord, resultForVirtualCells.get(eachCoord)/sumOfAllDifferences);
+
+
+            }
         }
 
         if (probe> 1.1 || probe< 0.9){
@@ -166,6 +195,11 @@ public class CellArea implements Serializable {
             this.factorMap.replace(centerCell, result);
             } else {
             this.factorMap.put(centerCell, result);
+        }
+        if (this.factorsForVirtualBorderCells.containsKey(centerCell)){
+            this.factorsForVirtualBorderCells.replace(centerCell, resultForVirtualCells);
+        } else {
+            this.factorsForVirtualBorderCells.put(centerCell, resultForVirtualCells);
         }
     }
 
@@ -223,6 +257,7 @@ public class CellArea implements Serializable {
             return;
         }
         this.nearFieldMap = new HashMap<>();
+        this.sizeNearField = new HashMap<>();
         for (Coordinates eachCoord: this.coords){
             this.nearFieldMap.put(eachCoord, this.getClosest100Cells(eachCoord, space));
         }
@@ -234,9 +269,19 @@ public class CellArea implements Serializable {
         List<Coordinates> lastStep = new ArrayList<>();
         List<Coordinates> nextStep = new ArrayList<>();
 
+        Integer size = 0;
+        int currentSize = 0;
+        if (space.allCells.getCell(centerCell).isFluid && space.allCells.getCell(centerCell).getAsFluidCell().isBorderCell()){
+            currentSize += space.allCells.getCell(centerCell).getAsFluidCell().getNumberOfVirtualBorders();
+            nextStep.add(centerCell);
+        }
         nextStep.addAll(space.allCells.getAllAdjacentFluidCells(centerCell));
 
-        while (result.size() + nextStep.size() < 100){
+        while (size + nextStep.size()+ currentSize< 100){
+
+            size += nextStep.size() + currentSize;
+            currentSize = 0;
+
             result.addAll(nextStep);
             lastStep.clear();
             lastStep.addAll(nextStep);
@@ -249,27 +294,40 @@ public class CellArea implements Serializable {
             nextStep = this.getCoordsThatNotInArray(result,nextStep);
             nextStep = this.removeCoordinateFomList(nextStep, centerCell);
 
+            for (Coordinates eachCell: nextStep){
+                if (space.allCells.getCell(eachCell).isFluid && space.allCells.getCell(eachCell).getAsFluidCell().isBorderCell()){
+                    currentSize += space.allCells.getCell(eachCell).getAsFluidCell().getNumberOfVirtualBorders();
+                }
+            }
+
 
             if (nextStep.isEmpty()){
+                this.sizeNearField.put(centerCell, size);
                 return result;
 
             }
         }
 
-        int difference = 100 - result.size();
+
         //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "needs to add " + difference + " cells from " + nextStep.size() +" cells: " + nextStep.toString());
         int range = nextStep.size();
 
-        for (int i =0; i<difference; i++){
+        while (size < 100){
             int randomInt = (int) (Math.random()*range);
             while (this.isCoordinateInList(nextStep.get(randomInt), result)){
                 randomInt = (int) (Math.random()*range);
             }
             result.add(nextStep.get(randomInt));
+            size ++;
+            if (space.allCells.getCell(nextStep.get(randomInt)).getAsFluidCell().isBorderCell()){
+                size += space.allCells.getCell(nextStep.get(randomInt)).getAsFluidCell().getNumberOfVirtualBorders();
+            }
+
             nextStep.remove(randomInt);
             range --;
 
         }
+        this.sizeNearField.put(centerCell, size);
 
         return result;
     }
@@ -405,7 +463,7 @@ public class CellArea implements Serializable {
         return this.systemOfEquationsMapping.get(targetCell);
     }
 
-    public int setIndexCoordinatesMapping(){
+    public void setIndexCoordinatesMapping(){
         int i = 0;
         this.systemOfEquationsMapping=new HashMap<>();
         this.coordinatesToIndexMapping= new HashMap<>();
@@ -421,12 +479,14 @@ public class CellArea implements Serializable {
             this.coordinatesToIndexMappingForVirtualCells.put(i, virtualCells);
             i++;
         }
-
-        return -1;
     }
 
     public Coordinates getCoordinatesForListIndex(int index) throws Exception{
         return this.coordinatesToIndexMapping.get(index);
+    }
+
+    public int getSizeOfNearFieldCoordinatesForCell(Coordinates centerCell){
+        return this.sizeNearField.get(centerCell);
     }
 
     public List<Coordinates> getNearFieldCoordinatesForCell(Coordinates centerCell){
@@ -497,6 +557,24 @@ public class CellArea implements Serializable {
 
     }
 
+    public void applyParticleFlowFromBorderCells(Space space){
+        this.calcDivergenceFromPressure(space);
+
+    }
+
+    private void calcDivergenceFromPressure(Space space) {
+        this.pressureDivergence = 0;
+
+        for(Coordinates eachCell: this.coords){
+            this.pressureDivergence = this.getEnergyDifferenceToIdealValue(space, eachCell);
+
+        }
+    }
+
+    private double getEnergyDifferenceToIdealValue(Space space, Coordinates eachCell) {
+        return this.energyPerCell - space.allCells.getCell(eachCell).getValue();
+    }
+
 
         /*
         StringBuilder builder = new StringBuilder("Pressure: " + this.pressure + "\nPressure of each cell: \n");
@@ -523,5 +601,13 @@ public class CellArea implements Serializable {
 
     public BigDecimal getBigDeciPressure() {
         return this.pressureDeci;
+    }
+
+    public double getFactorForVirtualCells(Coordinates centerCoordinates, Coordinates otherCell) {
+        return this.factorsForVirtualBorderCells.get(centerCoordinates).get(otherCell);
+    }
+
+    public boolean isIsobar() {
+        return this.isIsobar;
     }
 }

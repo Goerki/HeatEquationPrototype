@@ -383,23 +383,39 @@ public class Cells implements Serializable {
         }
     }
 
-    public void createAllVirtualBorderCells(double temp){
-        for(Coordinates coord:this.coords){
-            int border =0;
-            if (coord.x == 0 || coord.x == sizeX-1){
-                border ++;
-            }
-            if (coord.y == 0 || coord.y == sizeY-1){
-                border ++;
-            }
-            if (coord.z == 0 || coord.z == sizeZ-1){
-                border ++;
+    public void createAllVirtualBorderCells(double temp, double gasConstant){
 
+        for(Coordinates coord:this.coords){
+            List<FluidCell.particleFlowSource> borderDirections = new ArrayList<>();
+            int border =0;
+            if (coord.x == 0){
+                border ++;
+                borderDirections.add(FluidCell.particleFlowSource.XMINUS1);
+            }
+            if (coord.x == sizeX-1){
+                border ++;
+                borderDirections.add(FluidCell.particleFlowSource.XPLUS1);
+            }
+            if (coord.y == 0){
+                border ++;
+                borderDirections.add(FluidCell.particleFlowSource.YMINUS1);
+            }
+            if(coord.y == sizeY-1){
+                border ++;
+                borderDirections.add(FluidCell.particleFlowSource.YPLUS1);
+            }
+            if (coord.z == 0){
+                border ++;
+                borderDirections.add(FluidCell.particleFlowSource.ZMINUS1);
+            }
+            if(coord.z == sizeZ-1){
+                border ++;
+                borderDirections.add(FluidCell.particleFlowSource.ZPLUS1);
             }
             if (this.getCell(coord).isFluid) {
             this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "setting " + border + " border cells for cell " + coord);
 
-                this.getCell(coord).getAsFluidCell().setBorderCell(border, temp);
+                this.getCell(coord).getAsFluidCell().setBorderCell(border, temp, gasConstant, borderDirections);
 
                 if (coord.y == 0 || coord.y == sizeY - 1) {
                     this.getCell(coord).getAsFluidCell().setBorderCellOnTop();
