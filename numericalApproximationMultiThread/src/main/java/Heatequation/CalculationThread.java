@@ -157,7 +157,7 @@ public class CalculationThread extends Thread implements Serializable {
     }
 
     protected void normalizeCells(List<SystemOfEquations> equationList, List<CellArea> areaList){
-        Coordinates logCoords = new Coordinates(2,2,2);
+        Coordinates logCoords = new Coordinates(2,4,2);
         //set self and initialize calculaton
         //this.initializeNormalization();
 
@@ -177,7 +177,7 @@ public class CalculationThread extends Thread implements Serializable {
     }
 
     protected void finishNormalization() {
-        Coordinates logCoords = new Coordinates(2,2,2);
+        Coordinates logCoords = new Coordinates(2,4,2);
         //normailize all cells
         for (Coordinates coords : this.fluidCells) {
 
@@ -198,14 +198,14 @@ public class CalculationThread extends Thread implements Serializable {
 
     protected void normalizeCell(Coordinates centerCell, SystemOfEquations systemOfEquations){
 
-        Coordinates logCoords = new Coordinates(2,2,2);
+        Coordinates logCoords = new Coordinates(2,4,2);
 
         FluidCell cell  = this.space.allCells.getCell(centerCell).getAsFluidCell();
         if (centerCell.equals(logCoords)){
             try {
                 this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result center:" + systemOfEquations.getResultForCoordinates(centerCell));
                 if (cell.isBorderCell()){
-                    this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result virtual cells: " + systemOfEquations.getResultForVirtualCell(logCoords));
+                   // this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result virtual cells: " + systemOfEquations.getResultForVirtualCell(logCoords));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -234,7 +234,7 @@ public class CalculationThread extends Thread implements Serializable {
                 }
                 //add flow from virtual cells
                 if (cell.isBorderCell()) {
-                    cell.addToNumberParticlesForTemperatureCalculationFromVirtualBorderCell(systemOfEquations.getResultForVirtualCell(centerCell));
+                    //cell.addToNumberParticlesForTemperatureCalculationFromVirtualBorderCell(systemOfEquations.getResultForVirtualCell(centerCell));
                 }
 
 

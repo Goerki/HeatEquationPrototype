@@ -342,11 +342,13 @@ getRootPane().disable();
             tablePanel.remove(drawingTable);
         }
         if (generationSelecter.getSelectedIndex() == 2){
-            this.drawingTable = new DrawingTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat", consoleTextField);
+            this.drawingTable = new ColorTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat", consoleTextField);
             this.tablePanel.add(this.drawingTable);
         } else {
-            this.drawingTable = new DrawingTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "mat", consoleTextField);
+            this.drawingTable = new ColorTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "mat", consoleTextField);
             this.tablePanel.add(this.drawingTable);
+
+
         }
     }
 

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class MainThread extends CalculationThread {
+public class MainThread extends CalculationThread  {
     long numberSteps;
     List<CalculationThread> threads;
     List<CellArea> areas;
@@ -158,7 +158,7 @@ public class MainThread extends CalculationThread {
     @Override
     public void run(){
         for (int counter = 0; counter< this.numberSteps; counter++) {
-            Coordinates logCoords = new Coordinates(2,2,2);
+            Coordinates logCoords = new Coordinates(2,4,2);
 
 
             this.space.logFluidCell("beginning        ", logCoords);
@@ -170,6 +170,7 @@ public class MainThread extends CalculationThread {
 
             this.calcPressureForEachArea();
             this.calcPressureCalculationFailureForAllEquations();
+            System.out.print("after solid calculation");
             this.areas.get(0).printPressureForAllCells(space);
 
             //for debugging purposes only
@@ -199,6 +200,7 @@ public class MainThread extends CalculationThread {
             this.applyDiffussionAndUplift();
             waitDiffussionAndUpliftApplied();
             this.space.logFluidCell("fluidCalculation ", logCoords);
+            System.out.print("after solid calculation");
             this.areas.get(0).printPressureForAllCells(space);
 
 
@@ -246,9 +248,13 @@ public class MainThread extends CalculationThread {
             //this.calcPressureForEachArea();
             this.setAllAveragesInEquations();
 
+            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\nbefore flow from border");
+            this.areas.get(0).printPressureForAllCells(space);
+            this.applyParticleFlowFromBorderCellsToAllAreas();
 
 
-            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "before equation");
+
+            this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\nbefore equation");
             //this.calcPressureForEachArea();
             //this.calcPressureCalculationFailureForAllEquations();
             this.areas.get(0).printPressureForAllCells(space);
@@ -355,9 +361,16 @@ public class MainThread extends CalculationThread {
             if (eachArea.isFluid()){
                 initializeNormalizationForAllCellsInArea(eachArea);
             }
-
         }
+    }
 
+
+    public void applyParticleFlowFromBorderCellsToAllAreas(){
+        for (CellArea area: this.areas){
+            if(area.isFluid() && area.isIsobar()){
+                area.applyParticleFlowFromBorderCells(this.space);
+            }
+        }
     }
 
     private void calcPressureForEachArea() {
@@ -417,9 +430,9 @@ public class MainThread extends CalculationThread {
                 neighList.add(space.allCells.getNumberOfAdjacentFluidCells(adjacentCell));
             }
             if (this.space.allCells.getCell(coords).getAsFluidCell().isBorderCell()){
-                resList.add(equations.getResultForVirtualCell(coords));
-                tempList.add(this.space.allCells.getCell(coords).getAsFluidCell().getTemperatureOfBorderCell());
-                neighList.add(this.space.allCells.getCell(coords).getAsFluidCell().getNumberOfVirtualBorders());
+                //resList.add(equations.getResultForVirtualCell(coords));
+                //tempList.add(this.space.allCells.getCell(coords).getAsFluidCell().getTemperatureOfBorderCell());
+                //neighList.add(this.space.allCells.getCell(coords).getAsFluidCell().getNumberOfVirtualBorders());
                 }
 
 

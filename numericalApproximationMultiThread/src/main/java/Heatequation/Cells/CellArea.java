@@ -541,7 +541,7 @@ public class CellArea implements Serializable {
         BigDecimal tempPressureDeci = new BigDecimal(0);
         for (Coordinates eachCell : this.coords) {
             space.allCells.getCell(eachCell).getAsFluidCell().calculatePressure(space.allCells.gasConstant, 1);
-            //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "pressure for cell " + eachCell.toString() + " is "+  space.getCell(eachCell).getAsFluidCell().getPressure());
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "pressure for cell " + eachCell.toString() + " is "+  space.allCells.getCell(eachCell).getAsFluidCell().getPressure());
             tempPressure += space.allCells.getCell(eachCell).getAsFluidCell().getPressure();
             tempPressureDeci = tempPressureDeci.add(space.allCells.getCell(eachCell).getAsFluidCell().getPressureAsBigDecimal());
         }
@@ -560,19 +560,44 @@ public class CellArea implements Serializable {
     public void applyParticleFlowFromBorderCells(Space space){
         this.calcDivergenceFromPressure(space);
 
+        double[] temperatureDifferenceArray = new double[this.getNumberVirtualCells()];
+        double temperatureDifferenceSum = 0;
+        for(int i=0; i<this.getNumberVirtualCells(); i++){
+            temperatureDifferenceArray[i] = (space.allCells.getCell(this.getborderCellsWithVirtualCells().get(i)).getValue() -  space.allCells.getCell(this.getborderCellsWithVirtualCells().get(i)).getAsFluidCell().getTemperatureOfBorderCell())* space.allCells.getCell(this.getborderCellsWithVirtualCells().get(i)).getAsFluidCell().getNumberOfVirtualBorders();
+            temperatureDifferenceSum +=temperatureDifferenceArray[i];
+        }
+
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "energy difference calculated to " + this.pressureDivergence);
+
+        double probe = 0;
+        double[] einzelnerWert = new double[this.getNumberVirtualCells()];
+
+        if (temperatureDifferenceSum!=0) {
+            for (int i = 0; i < this.getNumberVirtualCells(); i++) {
+                einzelnerWert[i] = temperatureDifferenceArray[i] / temperatureDifferenceSum;
+                einzelnerWert[i] = einzelnerWert[i] * this.pressureDivergence / space.allCells.getCell(this.getborderCellsWithVirtualCells().get(i)).getAsFluidCell().getTemperatureOfBorderCell();
+                //for testing reasons only
+                //einzelnerWert[i] = 1.0/(double)this.getNumberVirtualCells();
+                space.particleFlowFromVirtualCell(this.getborderCellsWithVirtualCells().get(i), einzelnerWert[i]);
+                probe += einzelnerWert[i];
+            }
+        }
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "Probe calculated to " + probe);
+
+        probe *= 300;
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "energy adds to " + probe);
     }
 
     private void calcDivergenceFromPressure(Space space) {
         this.pressureDivergence = 0;
 
         for(Coordinates eachCell: this.coords){
-            this.pressureDivergence = this.getEnergyDifferenceToIdealValue(space, eachCell);
-
+            this.pressureDivergence += this.getEnergyDifferenceToIdealValue(space, eachCell);
         }
     }
 
     private double getEnergyDifferenceToIdealValue(Space space, Coordinates eachCell) {
-        return this.energyPerCell - space.allCells.getCell(eachCell).getValue();
+        return this.energyPerCell-space.allCells.getCell(eachCell).getValue()*space.allCells.getCell(eachCell).getAsFluidCell().getNumberParticles();
     }
 
 
@@ -603,6 +628,10 @@ public class CellArea implements Serializable {
         return this.pressureDeci;
     }
 
+
+
+
+
     public double getFactorForVirtualCells(Coordinates centerCoordinates, Coordinates otherCell) {
         return this.factorsForVirtualBorderCells.get(centerCoordinates).get(otherCell);
     }
@@ -610,4 +639,6 @@ public class CellArea implements Serializable {
     public boolean isIsobar() {
         return this.isIsobar;
     }
+
+
 }

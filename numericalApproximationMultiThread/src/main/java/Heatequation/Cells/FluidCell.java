@@ -180,6 +180,22 @@ public class FluidCell extends Cell implements Serializable {
         }
     }
 
+    public void particleFlowFromEachBorderCell(double amount) {
+
+        for(particleFlowSource direction: this.borderCell.getDirections()){
+            this.addToNumberParticlesAndTemperature(amount, this.borderCell.getTemperature(), direction);
+
+        }
+    }
+
+    public double getParticleFlowSum() {
+        double result = 0;
+        result += Math.abs(this.particleFLow.get(particleFlowSource.XPLUS1) - this.particleFLow.get(particleFlowSource.XMINUS1));
+        result += Math.abs(this.particleFLow.get(particleFlowSource.YPLUS1) - this.particleFLow.get(particleFlowSource.YMINUS1));
+        result += Math.abs(this.particleFLow.get(particleFlowSource.ZPLUS1) - this.particleFLow.get(particleFlowSource.ZMINUS1));
+        return result;
+    }
+
 
     public enum particleFlowSource{
         XPLUS1, XMINUS1, YPLUS1, YMINUS1, ZPLUS1, ZMINUS1
@@ -427,6 +443,12 @@ public class FluidCell extends Cell implements Serializable {
         this.numberParticles += particles;
     }
 
+    /**
+     * adds the number of particles to the number of particles and adds the energy of the particle flow to the inner energy in the value property (you need to normilize them afterwards)
+     * @param particles the number of particles that will be added as flow
+     * @param temperatureParticles the temperature of the paricles
+     * @param source the source, where the particles are coming from
+     */
     public void addToNumberParticlesAndInnerEnergy(double particles, double temperatureParticles, particleFlowSource source) {
         if (particles > 0) {
             this.value +=  particles * temperatureParticles;
@@ -436,6 +458,26 @@ public class FluidCell extends Cell implements Serializable {
         this.numberParticles += particles;
         this.addToParticleFlow(particles, source);
     }
+
+
+    /**
+     * adds the number of particles to the number of particles and calculates the new temerature as the average value of the ld and the new particles temperatures
+     * @param particles the number of particles that will be added as flow
+     * @param temperatureParticles the temperature of the paricles
+     * @param source the source, where the particles are coming from
+     */
+    public void addToNumberParticlesAndTemperature(double particles, double temperatureParticles, particleFlowSource source) {
+        this.value *= this.numberParticles;
+        if (particles > 0) {
+            this.value +=  particles * temperatureParticles;
+        } else {
+            this.value += particles*this.oldValue;
+        }
+        this.numberParticles += particles;
+        this.value /= this.numberParticles;
+        this.addToParticleFlow(particles, source);
+    }
+
 
     public void setOldValue(){
         this.oldValue = this.value;

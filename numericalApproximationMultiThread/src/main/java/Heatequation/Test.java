@@ -47,7 +47,7 @@ public class Test {
 /*
     public static void test(){
         Space space = new Space(3,3,3,50,100,1);
-        space.createSolidCube(1,0,0,2,2,2,10,"Iron");
+        space.createSolidCube(1,0,0,2,3,2,10,"Iron");
 
         space.initialize(10);
         System.out.println("gubl \n");

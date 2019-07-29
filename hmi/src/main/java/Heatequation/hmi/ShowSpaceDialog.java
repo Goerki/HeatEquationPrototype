@@ -37,6 +37,14 @@ public class ShowSpaceDialog extends JDialog {
         getRootPane().setDefaultButton(buttonCancel);
 
         this.tableSelecter.setSelectedIndex(0);
+        this.tableSelecter.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                newTable();
+                updateTable();
+                drawTable();
+            }
+        });
 
 
         buttonCancel.addActionListener(new ActionListener() {
@@ -129,10 +137,13 @@ public class ShowSpaceDialog extends JDialog {
             tablePanel.remove(drawingTable);
         }
         if (tableSelecter.getSelectedIndex() == 0){
-            this.drawingTable = new DrawingTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat", consoleTextPane);
+            this.drawingTable = new ColorTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "heat", consoleTextPane);
             this.tablePanel.add(this.drawingTable);
         } else if (tableSelecter.getSelectedIndex() == 2){
-            this.drawingTable = new DrawingTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "mat", consoleTextPane);
+            this.drawingTable = new ColorTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "mat", consoleTextPane);
+            this.tablePanel.add(this.drawingTable);
+        }else if (tableSelecter.getSelectedIndex() == 1){
+            this.drawingTable = new ArrowTable(space, axisSelection.getModel().getSelectedItem().toString(), layerSlider.getValue(), "flow", consoleTextPane);
             this.tablePanel.add(this.drawingTable);
         }
     }

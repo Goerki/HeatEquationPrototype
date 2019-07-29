@@ -46,7 +46,7 @@ public class Space implements Serializable {
         this.numberThreads=numberThreads;
         this.cellLength = 1;
         this.startingValue = startValue;
-        this.logCoords = new Coordinates(1,4,2);
+        this.logCoords = new Coordinates(2,4,2);
         this.initHistory(20);
     }
 
@@ -357,7 +357,14 @@ public class Space implements Serializable {
         if (coord.equals(logCoords)){
             System.out.print(logCoords.toString());
         }
+        if(coord.equals(this.logCoords)){
+            this.logFluidCell("before diff", coord);
+        }
         double diffusion = this.calcDiffusionForCell(coord);
+
+        if(coord.equals(this.logCoords)){
+            this.logFluidCell("after diff", coord);
+        }
 
         double convection = this.calcConvectionForCell(coord);
         this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, coord.toString() + ": diffussion: " + diffusion);
@@ -369,12 +376,25 @@ public class Space implements Serializable {
             }
         }
 
+        if(coord.equals(this.logCoords)){
+            this.logFluidCell("after convection", coord);
+        }
+
 
 
         allCells.getCell(coord).getAsFluidCell().calcDiffussionToBorderCell(diffusion);
+        if(coord.equals(this.logCoords)){
+            this.logFluidCell("before diffussion over borders", coord);
+        }
         if (allCells.getCell(coord).getAsFluidCell().isBorderCell()) {
             allCells.getCell(coord).getAsFluidCell().calcDiffussionFromBorderCell(this.calcDiffusionForVirtualBorderCell(coord));
+            if(coord.equals(this.logCoords)){
+                this.logFluidCell("after diffussion over borders", coord);
+            }
             this.calcConvectionFlowFromCellToBorderCell(coord, convection);
+            if(coord.equals(this.logCoords)){
+                this.logFluidCell("after convection over borders", coord);
+            }
         }
 
             this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, coord.toString()+": convection: " + convection);
@@ -383,10 +403,11 @@ public class Space implements Serializable {
 
 
 
-
+/*
         if(allCells.getCell(coord).getAsFluidCell().hasBorderCellOnTop()){
             allCells.getCell(coord).getAsFluidCell().calcConvectionOverBorder(convection);
         }
+        */
         //this.logFluidCell("after heatFlow from " + coord.toString() , this.logCoords);
 
         //non functional
@@ -443,7 +464,7 @@ public class Space implements Serializable {
             allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), FluidCell.particleFlowSource.YMINUS1);
             return;
         } else if (allCells.getCell(coord).getAsFluidCell().isBorderCell() && allCells.getCell(coord).getAsFluidCell().hasBorderCellOnBottom()) {
-            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), FluidCell.particleFlowSource.YMINUS1);
+            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), FluidCell.particleFlowSource.XPLUS1);
             return;
         } else {
             /*
@@ -504,7 +525,9 @@ public class Space implements Serializable {
      */
     private double calcDiffusionForVirtualBorderCell(Coordinates cell){
         double baseFactor = 0.075;
-        return baseFactor*allCells.getCell(cell).getAsFluidCell().getTemperatureOfBorderCell()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getNumberParticlesOfSingleVirtualCell();
+        baseFactor *=allCells.getCell(cell).getAsFluidCell().getTemperatureOfBorderCell()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getNumberParticlesOfSingleVirtualCell();
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "diffussion for border cells: " + baseFactor);
+        return baseFactor;
     }
 
 
@@ -514,6 +537,13 @@ public class Space implements Serializable {
         FluidCell.particleFlowSource direction = Coordinates.getSourceForCoordinates(source, target);
         allCells.getCell(source).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-amount, allCells.getCell(target).getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
         allCells.getCell(target).getAsFluidCell().addToNumberParticlesAndInnerEnergy(amount, allCells.getCell(source).getLastValue(), direction);
+
+    }
+
+    public void particleFlowFromVirtualCell(Coordinates target, double amount){
+
+
+        allCells.getCell(target).getAsFluidCell().particleFlowFromEachBorderCell(amount);
 
     }
 
@@ -811,5 +841,64 @@ public class Space implements Serializable {
             }
 
             return this.history[time].getCellsForLayer(axis, layer);
+    }
+
+    public double getMaxParticleFlow() {
+        double maxPart = -1;
+        for (CellArea eachArea : this.areas){
+            double tempFlow = this.getMaxParticleFlowForArea(eachArea);
+            if (tempFlow > maxPart){
+                maxPart = tempFlow;
+            }
+
+        }
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "Maximum flow found: " + maxPart);
+        return maxPart;
+    }
+
+    public double getMinParticleFlow() {
+        double minPart = 300;
+        for (CellArea eachArea : this.areas){
+            double tempFlow = this.getMinParticleFlowForArea(eachArea);
+            if (tempFlow < minPart){
+                minPart = tempFlow;
+            }
+
+        }
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "Minimum flow found: " + minPart);
+        return minPart;
+    }
+
+
+    private double getMaxParticleFlowForArea(CellArea eachArea) {
+        if (!eachArea.isFluid()){
+                return 0;
+        } else {
+                double maxValue = 0;
+                for (Coordinates eachCell: eachArea.coords){
+                    double cellFlow = this.allCells.getCell(eachCell).getAsFluidCell().getParticleFlowSum();
+                    if (cellFlow > maxValue){
+                        maxValue = cellFlow;
+                    }
+
+            }
+            return maxValue;
+        }
+    }
+
+    private double getMinParticleFlowForArea(CellArea eachArea) {
+        if (!eachArea.isFluid()){
+            return 0;
+        } else {
+            double minValue = 100;
+            for (Coordinates eachCell: eachArea.coords){
+                double cellFlow = this.allCells.getCell(eachCell).getAsFluidCell().getParticleFlowSum();
+                if (cellFlow < minValue){
+                    minValue = cellFlow;
+                }
+
+            }
+            return minValue;
+        }
     }
 }

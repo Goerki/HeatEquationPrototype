@@ -37,7 +37,7 @@ public class SystemOfEquations implements Serializable {
     SystemOfEquations(CellArea area, Cells cells, HeatequationLogger logger){
         this.logger = logger;
         this.area = area;
-        this.dimension = area.coords.size() + area.getborderCellsWithVirtualCells().size();
+        this.dimension = area.coords.size();
         this.pressureFailure =0;
 
 
@@ -48,7 +48,7 @@ public class SystemOfEquations implements Serializable {
 
         this.cells = cells;
         resetEquationsAndboundaries();
-        this.logCoords = new Coordinates(2,2,2);
+        this.logCoords = new Coordinates(2,4,2);
     }
 
     private void resetEquationsAndboundaries(){
@@ -146,7 +146,11 @@ public class SystemOfEquations implements Serializable {
              try {
                  //this.equationMatrix.set(centerIndex, neighborIndex,this.area.getFactorFor(centerCoordinates, otherCell) * this.cells.getCell(otherCell).getLastValue());
 
-                 this.equationMatrix.set(neighborIndex, centerIndex,this.area.getFactorFor(centerCoordinates, otherCell) * centerCell.getLastValue());
+                 if (neighborIndex == centerIndex){
+                     this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "\nNEIGHBOR EQUALS CENTER!");
+                 } else {
+                     this.equationMatrix.set(neighborIndex, centerIndex, this.area.getFactorFor(centerCoordinates, otherCell) * centerCell.getLastValue());
+                 }
 
              } catch (Exception e) {
                  e.printStackTrace();
@@ -155,6 +159,7 @@ public class SystemOfEquations implements Serializable {
              //this.equationMatrix.set(centerIndex,neighborIndex,this.area.getFactorFor(centerCoordinates,otherCell) * this.cells.getCell(otherCell).getLastValue());
 
              //virtual bordercells einkommend
+             /*
              int virtualBorderCellIndex = -1;
              if (cells.getCell(otherCell).getAsFluidCell().isBorderCell()) {
                  virtualBorderCellIndex = area.getListIndexForVirtualCell(otherCell);
@@ -170,11 +175,12 @@ public class SystemOfEquations implements Serializable {
                  //equations[virtualBorderCellIndex][listIndex] = this.cells.getCell(neighborCell).getLastValue()/cells.getNumberOfAdjacentFluidCells(neighborCell);
 
              }
+             */
 
         }
 
         if (centerCell.getAsFluidCell().isBorderCell()){
-            this.equationMatrix.set(centerIndex, area.getListIndexForVirtualCell(centerCoordinates),centerCell.getAsFluidCell().getTemperatureOfBorderCell());
+          //  this.equationMatrix.set(centerIndex, area.getListIndexForVirtualCell(centerCoordinates),centerCell.getAsFluidCell().getTemperatureOfBorderCell());
 
         }
 

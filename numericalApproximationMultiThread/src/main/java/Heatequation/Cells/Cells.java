@@ -16,7 +16,7 @@ public class Cells implements Serializable {
     List<Coordinates> cellsForSolidCalculation;
     public static double gasConstant = 0.0001;
     public static double cellSize = 1;
-    HeatequationLogger logger;
+    public HeatequationLogger logger;
     private int numberCells;
     protected double numberParticles;
     protected double averageTemp;
