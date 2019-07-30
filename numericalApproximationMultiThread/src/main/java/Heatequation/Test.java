@@ -1,24 +1,42 @@
 package Heatequation;
 
 import Heatequation.Cells.Coordinates;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import Heatequation.Cells.CustomLong;
 
-import java.awt.*;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Map;
 
 public class Test {
 
     public static void main(String[] args) {
         double x = 1000.0/3435;
+        long test =      1000000000000000000L;
+        double doubleTest = 1000.123456789123456;
+
+
+        CustomLong testTemp = new CustomLong(0.0,12);
+
+        CustomLong i1=  new CustomLong(1000,12);
+        CustomLong i2=  new CustomLong(1E-12,12);
+        CustomLong i3=  new CustomLong(6000000,12);
+        CustomLong i4=  new CustomLong(0.01,12);
+        CustomLong i5=  new CustomLong(0.0000001,12);
+        CustomLong i6=  new CustomLong(1E35,12);
+        i3.getAsDouble();
+
+        i1.add(i2);
+
+        i4.add(i5);
+
+
+        CustomLong t1=  new CustomLong(4,8);
+        i1=  new CustomLong(1,12);
+        i1.add(t1);
+        CustomLong t2=  new CustomLong(4,4);
+        i1=  new CustomLong(1,12);
+        i1.add(t2);
+        CustomLong t3=  new CustomLong(4,15);
+        i1=  new CustomLong(1,12);
+        i1.add(t3);
 
 
 
@@ -42,6 +60,8 @@ public class Test {
         }
 
     }
+
+
 
 
 /*
