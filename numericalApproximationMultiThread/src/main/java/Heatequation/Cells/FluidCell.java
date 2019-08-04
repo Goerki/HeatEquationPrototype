@@ -12,35 +12,35 @@ public class FluidCell extends Cell implements Serializable {
     private double numberParticles;
     private double lastNumberParticles;
     private VirtualFluidCell borderCell;
-    private Map<particleFlowSource, Double> particleFLow;
-    private Map<particleFlowSource, Double> inertiaParticleFlow;
+    private Map<Coordinates.direction, Double> particleFLow;
+    private Map<Coordinates.direction, Double> inertiaParticleFlow;
     private BigDecimal pressure;
 
 
-    public Map<particleFlowSource, Double> getParticleFLow() {
+    public Map<Coordinates.direction, Double> getParticleFLow() {
         return particleFLow;
     }
 
-    public Map<particleFlowSource, Double> getInertiaParticleFlow(){
+    public Map<Coordinates.direction, Double> getInertiaParticleFlow(){
         return inertiaParticleFlow;
     }
 
     public void calculateInertiaParticleFlow() {
 
-        this.calculateInertiaParticleFlowInDirection(particleFlowSource.XPLUS1);
-        this.calculateInertiaParticleFlowInDirection(particleFlowSource.YPLUS1);
-        this.calculateInertiaParticleFlowInDirection(particleFlowSource.ZPLUS1);
+        this.calculateInertiaParticleFlowInDirection(Coordinates.direction.XPLUS1);
+        this.calculateInertiaParticleFlowInDirection(Coordinates.direction.YPLUS1);
+        this.calculateInertiaParticleFlowInDirection(Coordinates.direction.ZPLUS1);
     }
 
-    private List<particleFlowSource> getBordercellDirections(){
-        List<particleFlowSource> result = new ArrayList<>();
+    private List<Coordinates.direction> getBordercellDirections(){
+        List<Coordinates.direction> result = new ArrayList<>();
         if (!this.isBorderCell()){
             return result;
         }
         return this.borderCell.getDirections();
     }
 
-    private void calculateInertiaParticleFlowInDirection(FluidCell.particleFlowSource positiveDirection) {
+    private void calculateInertiaParticleFlowInDirection(Coordinates.direction positiveDirection) {
         double particleFlowInPositiveDirection = this.particleFLow.get(positiveDirection) +this.particleFLow.get(this.getOppositeDirection(positiveDirection));
         if (particleFlowInPositiveDirection == 0){
             return;
@@ -48,63 +48,63 @@ public class FluidCell extends Cell implements Serializable {
 
 
         particleFlowInPositiveDirection *= -0.8;
-        FluidCell.particleFlowSource targetDirection = this.getOppositeDirectionForParticleFlow(positiveDirection);
+        Coordinates.direction targetDirection = this.getOppositeDirectionForParticleFlow(positiveDirection);
         if(this.directionExists(targetDirection)){
 
             this.addInertiaParticleFlow(particleFlowInPositiveDirection*0.8, targetDirection);
             particleFlowInPositiveDirection *= 0.2;
         }
-        List<FluidCell.particleFlowSource> directionList =  this.neighborCellsOrthogonalTo(positiveDirection);
-        for (FluidCell.particleFlowSource direction: directionList){
+        List<Coordinates.direction> directionList =  this.neighborCellsOrthogonalTo(positiveDirection);
+        for (Coordinates.direction direction: directionList){
             this.addInertiaParticleFlow(particleFlowInPositiveDirection/directionList.size(), direction);
         }
     }
 
-    private List<particleFlowSource> neighborCellsOrthogonalTo(particleFlowSource positiveDirection) {
-        List<particleFlowSource> result = new ArrayList<>();
+    private List<Coordinates.direction> neighborCellsOrthogonalTo(Coordinates.direction positiveDirection) {
+        List<Coordinates.direction> result = new ArrayList<>();
         switch (positiveDirection){
             case XPLUS1:{
-                if (this.directionExists(particleFlowSource.YPLUS1)){
-                    result.add(particleFlowSource.YPLUS1);
+                if (this.directionExists(Coordinates.direction.YPLUS1)){
+                    result.add(Coordinates.direction.YPLUS1);
                     }
-                if (this.directionExists(particleFlowSource.YMINUS1)){
-                    result.add(particleFlowSource.YMINUS1);
+                if (this.directionExists(Coordinates.direction.YMINUS1)){
+                    result.add(Coordinates.direction.YMINUS1);
                 }
-                if (this.directionExists(particleFlowSource.ZPLUS1)){
-                    result.add(particleFlowSource.ZPLUS1);
+                if (this.directionExists(Coordinates.direction.ZPLUS1)){
+                    result.add(Coordinates.direction.ZPLUS1);
                 }
-                if (this.directionExists(particleFlowSource.ZMINUS1)){
-                    result.add(particleFlowSource.ZMINUS1);
+                if (this.directionExists(Coordinates.direction.ZMINUS1)){
+                    result.add(Coordinates.direction.ZMINUS1);
                 }
                 return result;
             }
             case YPLUS1:{
-                if (this.directionExists(particleFlowSource.XPLUS1)){
-                    result.add(particleFlowSource.XPLUS1);
+                if (this.directionExists(Coordinates.direction.XPLUS1)){
+                    result.add(Coordinates.direction.XPLUS1);
                 }
-                if (this.directionExists(particleFlowSource.XMINUS1)){
-                    result.add(particleFlowSource.XMINUS1);
+                if (this.directionExists(Coordinates.direction.XMINUS1)){
+                    result.add(Coordinates.direction.XMINUS1);
                 }
-                if (this.directionExists(particleFlowSource.ZPLUS1)){
-                    result.add(particleFlowSource.ZPLUS1);
+                if (this.directionExists(Coordinates.direction.ZPLUS1)){
+                    result.add(Coordinates.direction.ZPLUS1);
                 }
-                if (this.directionExists(particleFlowSource.ZMINUS1)){
-                    result.add(particleFlowSource.ZMINUS1);
+                if (this.directionExists(Coordinates.direction.ZMINUS1)){
+                    result.add(Coordinates.direction.ZMINUS1);
                 }
                 return result;
             }
             case ZPLUS1:{
-                if (this.directionExists(particleFlowSource.YPLUS1)){
-                    result.add(particleFlowSource.YPLUS1);
+                if (this.directionExists(Coordinates.direction.YPLUS1)){
+                    result.add(Coordinates.direction.YPLUS1);
                 }
-                if (this.directionExists(particleFlowSource.YMINUS1)){
-                    result.add(particleFlowSource.YMINUS1);
+                if (this.directionExists(Coordinates.direction.YMINUS1)){
+                    result.add(Coordinates.direction.YMINUS1);
                 }
-                if (this.directionExists(particleFlowSource.XPLUS1)){
-                    result.add(particleFlowSource.XPLUS1);
+                if (this.directionExists(Coordinates.direction.XPLUS1)){
+                    result.add(Coordinates.direction.XPLUS1);
                 }
-                if (this.directionExists(particleFlowSource.XMINUS1)){
-                    result.add(particleFlowSource.XMINUS1);
+                if (this.directionExists(Coordinates.direction.XMINUS1)){
+                    result.add(Coordinates.direction.XMINUS1);
                 }
                 return result;
             }
@@ -113,51 +113,51 @@ public class FluidCell extends Cell implements Serializable {
         return null;
     }
 
-    private void addInertiaParticleFlow(double particleFlow, particleFlowSource direction) {
+    private void addInertiaParticleFlow(double particleFlow, Coordinates.direction direction) {
         Double newValue =  this.inertiaParticleFlow.get(direction)+particleFlow;
         this.inertiaParticleFlow.remove(direction);
         this.inertiaParticleFlow.put(direction, newValue);
     }
 
-    private boolean directionExists(particleFlowSource oppositeDirection) {
+    private boolean directionExists(Coordinates.direction oppositeDirection) {
         return this.neighborDirections.contains(oppositeDirection);
     }
 
-    private particleFlowSource getOppositeDirectionForParticleFlow(particleFlowSource positiveDirection) {
+    private Coordinates.direction getOppositeDirectionForParticleFlow(Coordinates.direction positiveDirection) {
         switch (positiveDirection){
             case XPLUS1:{
-                if(Math.abs(this.particleFLow.get(particleFlowSource.XPLUS1)) < Math.abs(this.particleFLow.get(particleFlowSource.XMINUS1))){
-                    return particleFlowSource.XPLUS1;
+                if(Math.abs(this.particleFLow.get(Coordinates.direction.XPLUS1)) < Math.abs(this.particleFLow.get(Coordinates.direction.XMINUS1))){
+                    return Coordinates.direction.XPLUS1;
                 } else {
-                    return particleFlowSource.XMINUS1;
+                    return Coordinates.direction.XMINUS1;
                 }
             }
             case YPLUS1:{
-                if(Math.abs(this.particleFLow.get(particleFlowSource.YPLUS1)) < Math.abs(this.particleFLow.get(particleFlowSource.YMINUS1))){
-                    return particleFlowSource.YPLUS1;
+                if(Math.abs(this.particleFLow.get(Coordinates.direction.YPLUS1)) < Math.abs(this.particleFLow.get(Coordinates.direction.YMINUS1))){
+                    return Coordinates.direction.YPLUS1;
                 } else {
-                    return particleFlowSource.YMINUS1;
+                    return Coordinates.direction.YMINUS1;
                 }
             }
             case ZPLUS1:{
-                if(Math.abs(this.particleFLow.get(particleFlowSource.ZPLUS1)) < Math.abs(this.particleFLow.get(particleFlowSource.ZMINUS1))){
-                    return particleFlowSource.ZPLUS1;
+                if(Math.abs(this.particleFLow.get(Coordinates.direction.ZPLUS1)) < Math.abs(this.particleFLow.get(Coordinates.direction.ZMINUS1))){
+                    return Coordinates.direction.ZPLUS1;
                 } else {
-                    return particleFlowSource.ZMINUS1;
+                    return Coordinates.direction.ZMINUS1;
                 }
             }
         }
         return null;
     }
 
-    private particleFlowSource getOppositeDirection(particleFlowSource direction){
+    private Coordinates.direction getOppositeDirection(Coordinates.direction direction){
         switch (direction){
-            case XPLUS1: return particleFlowSource.XMINUS1;
-            case XMINUS1: return particleFlowSource.XPLUS1;
-            case YPLUS1: return particleFlowSource.YMINUS1;
-            case YMINUS1: return particleFlowSource.YPLUS1;
-            case ZPLUS1: return particleFlowSource.ZMINUS1;
-            case ZMINUS1: return particleFlowSource.ZPLUS1;
+            case XPLUS1: return Coordinates.direction.XMINUS1;
+            case XMINUS1: return Coordinates.direction.XPLUS1;
+            case YPLUS1: return Coordinates.direction.YMINUS1;
+            case YMINUS1: return Coordinates.direction.YPLUS1;
+            case ZPLUS1: return Coordinates.direction.ZMINUS1;
+            case ZMINUS1: return Coordinates.direction.ZPLUS1;
         }
         return null;
     }
@@ -182,7 +182,7 @@ public class FluidCell extends Cell implements Serializable {
 
     public void particleFlowFromEachBorderCell(double amount) {
 
-        for(particleFlowSource direction: this.borderCell.getDirections()){
+        for(Coordinates.direction direction: this.borderCell.getDirections()){
             this.addToNumberParticlesAndTemperature(amount, this.borderCell.getTemperature(), direction);
 
         }
@@ -190,17 +190,14 @@ public class FluidCell extends Cell implements Serializable {
 
     public double getParticleFlowSum() {
         double result = 0;
-        result += Math.abs(this.particleFLow.get(particleFlowSource.XPLUS1) - this.particleFLow.get(particleFlowSource.XMINUS1));
-        result += Math.abs(this.particleFLow.get(particleFlowSource.YPLUS1) - this.particleFLow.get(particleFlowSource.YMINUS1));
-        result += Math.abs(this.particleFLow.get(particleFlowSource.ZPLUS1) - this.particleFLow.get(particleFlowSource.ZMINUS1));
+        result += Math.abs(this.particleFLow.get(Coordinates.direction.XPLUS1) - this.particleFLow.get(Coordinates.direction.XMINUS1));
+        result += Math.abs(this.particleFLow.get(Coordinates.direction.YPLUS1) - this.particleFLow.get(Coordinates.direction.YMINUS1));
+        result += Math.abs(this.particleFLow.get(Coordinates.direction.ZPLUS1) - this.particleFLow.get(Coordinates.direction.ZMINUS1));
         return result;
     }
 
 
-    public enum particleFlowSource{
-        XPLUS1, XMINUS1, YPLUS1, YMINUS1, ZPLUS1, ZMINUS1
-    };
-    private List<particleFlowSource> neighborDirections;
+    private List<Coordinates.direction> neighborDirections;
 
 
 
@@ -235,7 +232,7 @@ public class FluidCell extends Cell implements Serializable {
             return this.material.getNusselt();
         }
 
-        public void setBorderCell(int numberBorders, double temperature, double gasConstant, List<FluidCell.particleFlowSource> neighborDirections){
+        public void setBorderCell(int numberBorders, double temperature, double gasConstant, List<Coordinates.direction> neighborDirections){
         if(numberBorders==0){
             return;
         }
@@ -261,7 +258,7 @@ public class FluidCell extends Cell implements Serializable {
         /*
 
 
-        FluidCell.particleFlowSource direction = Coordinates.getSourceForCoordinates(source, target);
+        Coordinates.direction direction = Coordinates.getSourceForCoordinates(source, target);
         allCells.getCell(source).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-amount, allCells.getCell(target).getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
         allCells.getCell(target).getAsFluidCell().addToNumberParticlesAndInnerEnergy(amount, allCells.getCell(source).getLastValue(), direction);
 
@@ -269,7 +266,7 @@ public class FluidCell extends Cell implements Serializable {
 
         public void calcDiffussionToBorderCell(double amount){
         if (this.isBorderCell()) {
-            for (particleFlowSource source: this.getBordercellDirections()){
+            for (Coordinates.direction source: this.getBordercellDirections()){
                 this.addToNumberParticlesAndInnerEnergy(-amount, this.oldValue, source);
             }
 
@@ -352,33 +349,33 @@ public class FluidCell extends Cell implements Serializable {
 
     }
 
-    private void addToParticleFlow(double numberParticles, particleFlowSource source){
+    private void addToParticleFlow(double numberParticles, Coordinates.direction source){
         Double newValue =  this.particleFLow.get(source)+numberParticles;
         this.particleFLow.remove(source);
         this.particleFLow.put(source, newValue);
     }
 
-    public double getParticleFlowFromSource( particleFlowSource source){
+    public double getParticleFlowFromSource( Coordinates.direction source){
        return this.particleFLow.get(source);
     }
 
     public void resetParticleFlow(){
-        this.particleFLow.put(particleFlowSource.XPLUS1, 0.0);
-        this.particleFLow.put(particleFlowSource.XMINUS1, 0.0);
-        this.particleFLow.put(particleFlowSource.YPLUS1, 0.0);
-        this.particleFLow.put(particleFlowSource.YMINUS1, 0.0);
-        this.particleFLow.put(particleFlowSource.ZPLUS1, 0.0);
-        this.particleFLow.put(particleFlowSource.ZMINUS1, 0.0);
+        this.particleFLow.put(Coordinates.direction.XPLUS1, 0.0);
+        this.particleFLow.put(Coordinates.direction.XMINUS1, 0.0);
+        this.particleFLow.put(Coordinates.direction.YPLUS1, 0.0);
+        this.particleFLow.put(Coordinates.direction.YMINUS1, 0.0);
+        this.particleFLow.put(Coordinates.direction.ZPLUS1, 0.0);
+        this.particleFLow.put(Coordinates.direction.ZMINUS1, 0.0);
 
     }
 
     public void resetInertiaParticleFlow(){
-        this.inertiaParticleFlow.put(particleFlowSource.XPLUS1, 0.0);
-        this.inertiaParticleFlow.put(particleFlowSource.XMINUS1, 0.0);
-        this.inertiaParticleFlow.put(particleFlowSource.YPLUS1, 0.0);
-        this.inertiaParticleFlow.put(particleFlowSource.YMINUS1, 0.0);
-        this.inertiaParticleFlow.put(particleFlowSource.ZPLUS1, 0.0);
-        this.inertiaParticleFlow.put(particleFlowSource.ZMINUS1, 0.0);
+        this.inertiaParticleFlow.put(Coordinates.direction.XPLUS1, 0.0);
+        this.inertiaParticleFlow.put(Coordinates.direction.XMINUS1, 0.0);
+        this.inertiaParticleFlow.put(Coordinates.direction.YPLUS1, 0.0);
+        this.inertiaParticleFlow.put(Coordinates.direction.YMINUS1, 0.0);
+        this.inertiaParticleFlow.put(Coordinates.direction.ZPLUS1, 0.0);
+        this.inertiaParticleFlow.put(Coordinates.direction.ZMINUS1, 0.0);
     }
 
 
@@ -449,7 +446,7 @@ public class FluidCell extends Cell implements Serializable {
      * @param temperatureParticles the temperature of the paricles
      * @param source the source, where the particles are coming from
      */
-    public void addToNumberParticlesAndInnerEnergy(double particles, double temperatureParticles, particleFlowSource source) {
+    public void addToNumberParticlesAndInnerEnergy(double particles, double temperatureParticles, Coordinates.direction source) {
         if (particles > 0) {
             this.value +=  particles * temperatureParticles;
         } else {
@@ -466,7 +463,7 @@ public class FluidCell extends Cell implements Serializable {
      * @param temperatureParticles the temperature of the paricles
      * @param source the source, where the particles are coming from
      */
-    public void addToNumberParticlesAndTemperature(double particles, double temperatureParticles, particleFlowSource source) {
+    public void addToNumberParticlesAndTemperature(double particles, double temperatureParticles, Coordinates.direction source) {
         this.value *= this.numberParticles;
         if (particles > 0) {
             this.value +=  particles * temperatureParticles;
@@ -501,8 +498,11 @@ public class FluidCell extends Cell implements Serializable {
     }
 
 
-    public void setNeighborDirections(List<particleFlowSource> neighborDirections) {
+    public void setNeighborDirections(List<Coordinates.direction> neighborDirections) {
         this.neighborDirections = neighborDirections;
     }
 
+    public double getEnergy() {
+        return this.value*this.numberParticles;
+    }
 }

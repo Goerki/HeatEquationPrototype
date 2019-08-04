@@ -386,31 +386,31 @@ public class Cells implements Serializable {
     public void createAllVirtualBorderCells(double temp, double gasConstant){
 
         for(Coordinates coord:this.coords){
-            List<FluidCell.particleFlowSource> borderDirections = new ArrayList<>();
+            List<Coordinates.direction> borderDirections = new ArrayList<>();
             int border =0;
             if (coord.x == 0){
                 border ++;
-                borderDirections.add(FluidCell.particleFlowSource.XMINUS1);
+                borderDirections.add(Coordinates.direction.XMINUS1);
             }
             if (coord.x == sizeX-1){
                 border ++;
-                borderDirections.add(FluidCell.particleFlowSource.XPLUS1);
+                borderDirections.add(Coordinates.direction.XPLUS1);
             }
             if (coord.y == 0){
                 border ++;
-                borderDirections.add(FluidCell.particleFlowSource.YMINUS1);
+                borderDirections.add(Coordinates.direction.YMINUS1);
             }
             if(coord.y == sizeY-1){
                 border ++;
-                borderDirections.add(FluidCell.particleFlowSource.YPLUS1);
+                borderDirections.add(Coordinates.direction.YPLUS1);
             }
             if (coord.z == 0){
                 border ++;
-                borderDirections.add(FluidCell.particleFlowSource.ZMINUS1);
+                borderDirections.add(Coordinates.direction.ZMINUS1);
             }
             if(coord.z == sizeZ-1){
                 border ++;
-                borderDirections.add(FluidCell.particleFlowSource.ZPLUS1);
+                borderDirections.add(Coordinates.direction.ZPLUS1);
             }
             if (this.getCell(coord).isFluid) {
             this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "setting " + border + " border cells for cell " + coord);
@@ -551,25 +551,25 @@ public class Cells implements Serializable {
     }
 
     public void setExistingNeighborDirections(Coordinates centerCell){
-        List<FluidCell.particleFlowSource> neighborList = new ArrayList<>();
+        List<Coordinates.direction> neighborList = new ArrayList<>();
         for (Coordinates neighbor : this.getAllAdjacentFluidCells(centerCell)){
             if (neighbor.equals(centerCell.getCellXPlus1())){
-                neighborList.add(FluidCell.particleFlowSource.XPLUS1);
+                neighborList.add(Coordinates.direction.XPLUS1);
             }
             if (neighbor.equals(centerCell.getCellYPlus1())){
-                neighborList.add(FluidCell.particleFlowSource.YPLUS1);
+                neighborList.add(Coordinates.direction.YPLUS1);
             }
             if (neighbor.equals(centerCell.getCellZPlus1())){
-                neighborList.add(FluidCell.particleFlowSource.ZPLUS1);
+                neighborList.add(Coordinates.direction.ZPLUS1);
             }
             if (neighbor.equals(centerCell.getCellXMinus1())){
-                neighborList.add(FluidCell.particleFlowSource.XMINUS1);
+                neighborList.add(Coordinates.direction.XMINUS1);
             }
             if (neighbor.equals(centerCell.getCellYMinus1())){
-                neighborList.add(FluidCell.particleFlowSource.YMINUS1);
+                neighborList.add(Coordinates.direction.YMINUS1);
             }
             if (neighbor.equals(centerCell.getCellZMinus1())){
-                neighborList.add(FluidCell.particleFlowSource.ZMINUS1);
+                neighborList.add(Coordinates.direction.ZMINUS1);
             }
 
 

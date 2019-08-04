@@ -9,9 +9,9 @@ public class VirtualFluidCell {
     private boolean isOnBottom;
     private double pressure;
     private double numberParticles;
-    private List<FluidCell.particleFlowSource> directions;
+    private List<Coordinates.direction> directions;
 
-    public VirtualFluidCell(int numberBorders, double temp, double gasConstant, List<FluidCell.particleFlowSource> directions){
+    public VirtualFluidCell(int numberBorders, double temp, double gasConstant, List<Coordinates.direction> directions){
         this.numberBorders = numberBorders;
         this.temperature = temp;
         isOnTop = false;
@@ -48,7 +48,7 @@ public class VirtualFluidCell {
         isOnBottom = onBottom;
     }
 
-    public List<FluidCell.particleFlowSource> getDirections() {
+    public List<Coordinates.direction> getDirections() {
         return directions;
     }
 }

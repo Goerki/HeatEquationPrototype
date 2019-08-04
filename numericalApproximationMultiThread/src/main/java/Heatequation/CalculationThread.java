@@ -2,6 +2,7 @@ package Heatequation;
 import Heatequation.Cells.CellArea;
 import Heatequation.Cells.Coordinates;
 import Heatequation.Cells.FluidCell;
+import Heatequation.Cells.Junction;
 
 import java.io.Serializable;
 import java.util.List;
@@ -124,7 +125,7 @@ public class CalculationThread extends Thread implements Serializable {
             int index = 0;
             try {
                 index = this.getEquationIndexForCell(areaList, eachCell);
-                equationsList.get(index).addToEquations(eachCoord, areaList.get(index));
+                equationsList.get(index).addToEquations(eachCoord);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -203,7 +204,10 @@ public class CalculationThread extends Thread implements Serializable {
         FluidCell cell  = this.space.allCells.getCell(centerCell).getAsFluidCell();
         if (centerCell.equals(logCoords)){
             try {
-                this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result center:" + systemOfEquations.getResultForCoordinates(centerCell));
+                for(Junction eachJunction: systemOfEquations.area.getOutgoingJunctionsForCell(centerCell)){
+                    this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result " + eachJunction + " : " + systemOfEquations.getResultForJunction(eachJunction));
+                }
+
                 if (cell.isBorderCell()){
                    // this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result virtual cells: " + systemOfEquations.getResultForVirtualCell(logCoords));
                 }
@@ -221,14 +225,25 @@ public class CalculationThread extends Thread implements Serializable {
         }
         */
 
-        for (Coordinates eachCoord: systemOfEquations.area.getNearFieldCoordinatesForCell(centerCell)){
+        for (Junction eachJunction: systemOfEquations.area.getOutgoingJunctionsForCell(centerCell)){
             //add temperatures and particle flow to cell
-                FluidCell adjacentCell = this.space.allCells.getCell(eachCoord).getAsFluidCell();
-                try {
-                    double factor = systemOfEquations.area.getFactorFor(centerCell, eachCoord);
-                    //double factor = 1/((double) systemOfEquations.area.getNearFieldCoordinatesForCell(centerCell).size()+1.0);
-                    adjacentCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(systemOfEquations.getResultForCoordinates(centerCell) *factor, cell.getLastValue());
-                    cell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-systemOfEquations.getResultForCoordinates(centerCell)*factor, cell.getLastValue());
+            FluidCell targetCell;
+            FluidCell sourceCell;
+            try {
+            if (systemOfEquations.getResultForJunction(eachJunction) >0){
+                targetCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
+                sourceCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
+            } else {
+                targetCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
+                sourceCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
+            }
+
+            double result = systemOfEquations.getAbsoluteResultForJunction(eachJunction);
+            double particleFlow = systemOfEquations.getAbsoluteResultForJunction(eachJunction)/sourceCell.getLastValue();
+
+
+                targetCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, sourceCell.getLastValue());
+                sourceCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-particleFlow, sourceCell.getLastValue());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -240,7 +255,7 @@ public class CalculationThread extends Thread implements Serializable {
 
                 if (centerCell.equals(logCoords)) {
                     try {
-                        this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result " + eachCoord + ": " + systemOfEquations.getResultForCoordinates(eachCoord));
+                        this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result " + eachJunction + ": " + systemOfEquations.getResultForJunction(eachJunction));
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -252,7 +267,7 @@ public class CalculationThread extends Thread implements Serializable {
 
     protected void calulateInertiaParticleFlow() {
         for (Coordinates eachCell: this.fluidCells){
-            space.calculateInertiaParticleFlowForCell(eachCell);
+            //space.calculateInertiaParticleFlowForCell(eachCell);
 
         }
 
@@ -260,7 +275,7 @@ public class CalculationThread extends Thread implements Serializable {
 
     protected void applyInertiaParticleFlow() {
         for (Coordinates eachCell: this.fluidCells){
-            space.applyInertiaParticleFlowForCell(eachCell);
+            //space.applyInertiaParticleFlowForCell(eachCell);
 
         }
 

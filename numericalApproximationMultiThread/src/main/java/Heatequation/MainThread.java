@@ -414,9 +414,10 @@ public class MainThread extends CalculationThread  {
 
 
     private void checkEquationResult(Coordinates coords){
-
+/*
         try {
             SystemOfEquations equations = this.equationSystemList.get(this.getEquationIndexForCell(this.areas,this.space.allCells.getCell(coords).getAsFluidCell()));
+
 
             double N1 = equations.getResultForCoordinates(coords);
             double N0 = space.allCells.getCell(coords).getAsFluidCell().getLastNumberParticles();
@@ -453,7 +454,7 @@ public class MainThread extends CalculationThread  {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+*/
     }
 
     private void fillBorderBoundaries() {

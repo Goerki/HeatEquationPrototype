@@ -34,10 +34,10 @@ public class Space implements Serializable {
 
     public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
         this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
-        this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
-        this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
         this.sizeX= sizeX;
         this.sizeY= sizeY;
@@ -461,10 +461,10 @@ public class Space implements Serializable {
 
     private void calcConvectionFlowFromCellToBorderCell(Coordinates coord, double convection) {
         if (allCells.getCell(coord).getAsFluidCell().isBorderCell() && allCells.getCell(coord).getAsFluidCell().hasBorderCellOnTop()) {
-            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), FluidCell.particleFlowSource.YMINUS1);
+            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), Coordinates.direction.YMINUS1);
             return;
         } else if (allCells.getCell(coord).getAsFluidCell().isBorderCell() && allCells.getCell(coord).getAsFluidCell().hasBorderCellOnBottom()) {
-            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), FluidCell.particleFlowSource.XPLUS1);
+            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), Coordinates.direction.XPLUS1);
             return;
         } else {
             /*
@@ -534,7 +534,7 @@ public class Space implements Serializable {
     private void particleFlowFromTo(Coordinates source, Coordinates target, double amount){
 
 
-        FluidCell.particleFlowSource direction = Coordinates.getSourceForCoordinates(source, target);
+        Coordinates.direction direction = Coordinates.getSourceForCoordinates(source, target);
         allCells.getCell(source).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-amount, allCells.getCell(target).getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
         allCells.getCell(target).getAsFluidCell().addToNumberParticlesAndInnerEnergy(amount, allCells.getCell(source).getLastValue(), direction);
 
@@ -822,9 +822,9 @@ public class Space implements Serializable {
         if (centerCell.equals(this.logCoords) ){
             //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "cell " + centerCell.toString() + " : " + this.allCells.getCell(centerCell).getAsFluidCell().toString());
         }
-        Map<FluidCell.particleFlowSource, Double> particleFlowSourceDoubleMap = allCells.getCell(centerCell).getAsFluidCell().getInertiaParticleFlow();
+        Map<Coordinates.direction, Double> particleFlowSourceDoubleMap = allCells.getCell(centerCell).getAsFluidCell().getInertiaParticleFlow();
 
-        for (FluidCell.particleFlowSource direction: particleFlowSourceDoubleMap.keySet()){
+        for (Coordinates.direction direction: particleFlowSourceDoubleMap.keySet()){
             if (particleFlowSourceDoubleMap.get(direction) != 0) {
 
 

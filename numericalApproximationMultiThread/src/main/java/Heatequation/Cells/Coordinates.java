@@ -8,6 +8,14 @@ public class Coordinates implements Serializable {
     public int x;
     public int y;
     public int z;
+    public enum direction{
+        XPLUS1,
+        XMINUS1,
+        YPLUS1,
+        YMINUS1,
+        ZPLUS1,
+        ZMINUS1
+    }
 
     public Coordinates(int x, int y, int z) {
         this.x = x;
@@ -117,7 +125,7 @@ public class Coordinates implements Serializable {
         return result;
     }
 
-    public static Coordinates getCoordinatesForParticleFlowSource(Coordinates centerCell, FluidCell.particleFlowSource source) {
+    public static Coordinates getCoordinatesForParticleFlowSource(Coordinates centerCell, Coordinates.direction source) {
         switch (source) {
             case XPLUS1: {
                 return centerCell.getCellXPlus1();
@@ -142,38 +150,38 @@ public class Coordinates implements Serializable {
 
     }
 
-    public static FluidCell.particleFlowSource getSourceForCoordinates(Coordinates source, Coordinates target) {
+    public static Coordinates.direction getSourceForCoordinates(Coordinates source, Coordinates target) {
         if (target.getCellYMinus1().equals(source)) {
-            return FluidCell.particleFlowSource.YMINUS1;
+            return Coordinates.direction.YMINUS1;
         } else if (target.getCellYPlus1().equals(source)) {
-            return FluidCell.particleFlowSource.YPLUS1;
+            return Coordinates.direction.YPLUS1;
         } else if (target.getCellXMinus1().equals(source)) {
-            return FluidCell.particleFlowSource.XMINUS1;
+            return Coordinates.direction.XMINUS1;
         } else if (target.getCellXPlus1().equals(source)) {
-            return FluidCell.particleFlowSource.XPLUS1;
+            return Coordinates.direction.XPLUS1;
         } else if (target.getCellZPlus1().equals(source)) {
-            return FluidCell.particleFlowSource.ZPLUS1;
+            return Coordinates.direction.ZPLUS1;
         } else if (target.getCellZMinus1().equals(source)) {
-            return FluidCell.particleFlowSource.ZMINUS1;
+            return Coordinates.direction.ZMINUS1;
         }
         return null;
 
     }
 
-    public static FluidCell.particleFlowSource getOppositeParticleFlowDirection(FluidCell.particleFlowSource source) {
+    public static Coordinates.direction getOppositeParticleFlowDirection(Coordinates.direction source) {
         switch (source) {
             case XMINUS1:
-                return FluidCell.particleFlowSource.XPLUS1;
+                return Coordinates.direction.XPLUS1;
             case XPLUS1:
-                return FluidCell.particleFlowSource.XMINUS1;
+                return Coordinates.direction.XMINUS1;
             case YMINUS1:
-                return FluidCell.particleFlowSource.YPLUS1;
+                return Coordinates.direction.YPLUS1;
             case YPLUS1:
-                return FluidCell.particleFlowSource.YMINUS1;
+                return Coordinates.direction.YMINUS1;
             case ZMINUS1:
-                return FluidCell.particleFlowSource.ZPLUS1;
+                return Coordinates.direction.ZPLUS1;
             case ZPLUS1:
-                return FluidCell.particleFlowSource.ZMINUS1;
+                return Coordinates.direction.ZMINUS1;
         }
         return null;
     }

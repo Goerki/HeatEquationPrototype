@@ -27,14 +27,13 @@ public class CellArea implements Serializable {
     private boolean isIsochor;
     private boolean isIsobar;
     private HeatequationLogger logger;
-    private Map<Coordinates, List<Coordinates>> nearFieldMap;
-    private Map<Coordinates, Map<Coordinates, Double>> factorMap;
-    private Map<Coordinates, Map<Coordinates, Double>> factorsForVirtualBorderCells;
+    private Map<Coordinates, List<Junction>> validJunctionMap;
     private Map<Coordinates, Integer> sizeNearField;
-     private Map<Coordinates, Integer> systemOfEquationsMapping;
-    private Map<Integer,Coordinates> coordinatesToIndexMapping;
-    private Map<Coordinates, Integer> systemOfEquationsMappingForVirtualCells;
-    private Map<Integer,Coordinates> coordinatesToIndexMappingForVirtualCells;
+    private int numberJunctions;
+    private Map<Junction, Integer> systemOfEquationsMapping;
+    private Map<Integer,Junction> junctionToIndexMapping;
+    private Map<Junction, Integer> systemOfEquationsMappingForVirtualCells;
+    private Map<Integer,Junction> junctionsToIndexMappingForVirtualCells;
 
 
 
@@ -55,11 +54,10 @@ public class CellArea implements Serializable {
         this.minY = this.setMinY();
         this.maxY = this.setMaxY();
         this.meanValues= new double[maxY - minY];
-        this.factorMap = new HashMap<>();
-        this.factorsForVirtualBorderCells = new HashMap<>();
+
         setYLayers();
         this.setBorderCellsWithVirtualCells(space.allCells);
-        this.setIndexCoordinatesMapping();
+
         if (this.borderCellsWithVirtualCells.size()==0){
             this.isIsobar = false;
             this.isIsochor = true;
@@ -75,9 +73,11 @@ public class CellArea implements Serializable {
             for (Coordinates coord: this.coords){
                 space.allCells.setExistingNeighborDirections(coord);
             }
+            this.createJunctions(space);
+            this.setIndexJunctionMapping();
         }
 
-        this.getNearFieldApproximation(space);
+
 
     }
 
@@ -133,84 +133,6 @@ public class CellArea implements Serializable {
         }
     }
 
-    public void setFactorsForCell(Coordinates centerCell, double generalAverage, Cells cells){
-
-        /*
-        setting average for each cell
-         */
-        double average=0;
-        for (Coordinates eachCord: this.getNearFieldCoordinatesForCell(centerCell)){
-            average += cells.getCell(eachCord).getLastValue()*cells.getCell(eachCord).getAsFluidCell().getLastNumberParticles();
-            if (cells.getCell(eachCord).getAsFluidCell().isBorderCell()){
-                for (int i=0; i < cells.getCell(eachCord).getAsFluidCell().getNumberOfVirtualBorders(); i++) {
-                    average+= cells.getCell(eachCord).getAsFluidCell().getTemperatureOfBorderCell() * cells.getCell(eachCord).getAsFluidCell().getNumberParticlesOfSingleVirtualCell();
-
-                }
-            }
-        }
-        average/= this.getSizeOfNearFieldCoordinatesForCell(centerCell);
-        //end
-
-        Map<Coordinates, Double> result = new HashMap<>();
-        Map<Coordinates, Double> resultForVirtualCells = new HashMap<>();
-        double sumOfAllDifferences =0;
-
-        List<Double> differences = new ArrayList<>();
-        double probe = 0;
-        for (Coordinates eachCord: this.getNearFieldCoordinatesForCell(centerCell)){
-            double factor = Math.abs(average - cells.getCell(eachCord).getLastValue()*cells.getCell(eachCord).getAsFluidCell().getLastNumberParticles());
-            factor += 1.0;
-            differences.add(factor);
-
-            result.put(eachCord,factor);
-            sumOfAllDifferences += factor;
-            if (cells.getCell(eachCord).getAsFluidCell().isBorderCell()){
-                double virtualFactor=0;
-                for (int i=0; i < cells.getCell(eachCord).getAsFluidCell().getNumberOfVirtualBorders(); i++) {
-                    virtualFactor= Math.abs(average - cells.getCell(eachCord).getAsFluidCell().getTemperatureOfBorderCell() * cells.getCell(eachCord).getAsFluidCell().getNumberParticlesOfSingleVirtualCell());
-                    virtualFactor += 1.0;
-                    sumOfAllDifferences += virtualFactor;
-                }
-                resultForVirtualCells.put(eachCord, virtualFactor);
-
-            }
-        }
-        //add one to make the equation system solveable
-        sumOfAllDifferences += Math.abs(average - cells.getCell(centerCell).getLastValue()*cells.getCell(centerCell).getAsFluidCell().getLastNumberParticles())+1.0;
-        for (Coordinates eachCoord: this.getNearFieldCoordinatesForCell(centerCell)){
-            result.replace(eachCoord, result.get(eachCoord)/sumOfAllDifferences);
-            probe+= result.get(eachCoord);
-            if (cells.getCell(eachCoord).getAsFluidCell().isBorderCell()){
-                resultForVirtualCells.replace(eachCoord, resultForVirtualCells.get(eachCoord)/sumOfAllDifferences);
-
-
-            }
-        }
-
-        if (probe> 1.1 || probe< 0.9){
-            logger.logMessage(HeatequationLogger.LogLevel.ERROR, "factors are not correct for cell " + centerCell + " probe: " + probe);
-        }
-
-        if (this.factorMap.containsKey(centerCell)){
-            this.factorMap.replace(centerCell, result);
-            } else {
-            this.factorMap.put(centerCell, result);
-        }
-        if (this.factorsForVirtualBorderCells.containsKey(centerCell)){
-            this.factorsForVirtualBorderCells.replace(centerCell, resultForVirtualCells);
-        } else {
-            this.factorsForVirtualBorderCells.put(centerCell, resultForVirtualCells);
-        }
-    }
-
-    public double getFactorFor(Coordinates centerCell, Coordinates targetCell) throws Exception{
-        if (this.factorMap.get(centerCell).get(targetCell)!=null){
-            return this.factorMap.get(centerCell).get(targetCell);
-        } else {
-            throw new Exception("Coult not get factor for flow from " + centerCell + " to " + targetCell);
-        }
-
-    }
 
     public double getPressure() {
         return this.pressure;
@@ -252,85 +174,34 @@ public class CellArea implements Serializable {
         return false;
     }
 
-    private void getNearFieldApproximation(Space space){
+    private void createJunctions(Space space){
         if (!this.isFluid){
             return;
         }
-        this.nearFieldMap = new HashMap<>();
+        this.validJunctionMap = new HashMap<>();
         this.sizeNearField = new HashMap<>();
+        this.numberJunctions = 0;
         for (Coordinates eachCoord: this.coords){
-            this.nearFieldMap.put(eachCoord, this.getClosest100Cells(eachCoord, space));
+            this.validJunctionMap.put(eachCoord, this.getAllValidJunctions(eachCoord, space));
+            this.numberJunctions += this.getAllValidJunctions(eachCoord, space).size();
         }
     }
 
-
-    private List<Coordinates> getClosest100Cells(Coordinates centerCell, Space space){
-        List<Coordinates> result = new ArrayList<>();
-        List<Coordinates> lastStep = new ArrayList<>();
-        List<Coordinates> nextStep = new ArrayList<>();
-
-        Integer size = 0;
-        int currentSize = 0;
-        if (space.allCells.getCell(centerCell).isFluid && space.allCells.getCell(centerCell).getAsFluidCell().isBorderCell()){
-            currentSize += space.allCells.getCell(centerCell).getAsFluidCell().getNumberOfVirtualBorders();
-            nextStep.add(centerCell);
-        }
-        nextStep.addAll(space.allCells.getAllAdjacentFluidCells(centerCell));
-
-        while (size + nextStep.size()+ currentSize< 100){
-
-            size += nextStep.size() + currentSize;
-            currentSize = 0;
-
-            result.addAll(nextStep);
-            lastStep.clear();
-            lastStep.addAll(nextStep);
-            nextStep.clear();
-
-            for (Coordinates cellFromLastStep: lastStep){
-                nextStep.addAll(space.allCells.getAllAdjacentFluidCells(cellFromLastStep));
-            }
-            nextStep = this.removeDoubleEntriesFromList(nextStep);
-            nextStep = this.getCoordsThatNotInArray(result,nextStep);
-            nextStep = this.removeCoordinateFomList(nextStep, centerCell);
-
-            for (Coordinates eachCell: nextStep){
-                if (space.allCells.getCell(eachCell).isFluid && space.allCells.getCell(eachCell).getAsFluidCell().isBorderCell()){
-                    currentSize += space.allCells.getCell(eachCell).getAsFluidCell().getNumberOfVirtualBorders();
-                }
-            }
-
-
-            if (nextStep.isEmpty()){
-                this.sizeNearField.put(centerCell, size);
-                return result;
+    private List<Junction> getAllValidJunctions(Coordinates centerCoord, Space space) {
+        List<Junction> junctionList = new ArrayList<>();
+        for (Coordinates neighbor: space.allCells.getAllAdjacentFluidCells(centerCoord)){
+            Junction temp;
+            try {
+                temp = new Junction(centerCoord, neighbor);
+                junctionList.add(temp);
+            } catch (Exception e) {
 
             }
         }
-
-
-        //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "needs to add " + difference + " cells from " + nextStep.size() +" cells: " + nextStep.toString());
-        int range = nextStep.size();
-
-        while (size < 100){
-            int randomInt = (int) (Math.random()*range);
-            while (this.isCoordinateInList(nextStep.get(randomInt), result)){
-                randomInt = (int) (Math.random()*range);
-            }
-            result.add(nextStep.get(randomInt));
-            size ++;
-            if (space.allCells.getCell(nextStep.get(randomInt)).getAsFluidCell().isBorderCell()){
-                size += space.allCells.getCell(nextStep.get(randomInt)).getAsFluidCell().getNumberOfVirtualBorders();
-            }
-
-            nextStep.remove(randomInt);
-            range --;
-
-        }
-        this.sizeNearField.put(centerCell, size);
-
-        return result;
+        return junctionList;
     }
+
+
 
     private List<Coordinates> removeCoordinateFomList(List<Coordinates> nextStep, Coordinates centerCell) {
         for (int i=0; i<nextStep.size(); i++){
@@ -459,38 +330,43 @@ public class CellArea implements Serializable {
         return maxY;
     }
 
-    public int getListIndexForCell(Coordinates targetCell){
-        return this.systemOfEquationsMapping.get(targetCell);
+    public int getListIndexForJunction(Junction junction){
+        return this.systemOfEquationsMapping.get(junction);
     }
 
-    public void setIndexCoordinatesMapping(){
+    public void setIndexJunctionMapping(){
         int i = 0;
         this.systemOfEquationsMapping=new HashMap<>();
-        this.coordinatesToIndexMapping= new HashMap<>();
+        this.junctionToIndexMapping = new HashMap<>();
         this.systemOfEquationsMappingForVirtualCells=new HashMap<>();
-        this.coordinatesToIndexMappingForVirtualCells= new HashMap<>();
+        this.junctionsToIndexMappingForVirtualCells = new HashMap<>();
         for (Coordinates coordinates: this.coords){
-            this.systemOfEquationsMapping.put(coordinates, i);
-            this.coordinatesToIndexMapping.put(i, coordinates);
-            i++;
+            for (Junction eachJunction: this.validJunctionMap.get(coordinates)){
+                this.systemOfEquationsMapping.put(eachJunction, i);
+                this.junctionToIndexMapping.put(i, eachJunction);
+                i++;
+            }
+
         }
-        for(Coordinates virtualCells: this.borderCellsWithVirtualCells){
-            this.systemOfEquationsMappingForVirtualCells.put(virtualCells, i);
-            this.coordinatesToIndexMappingForVirtualCells.put(i, virtualCells);
-            i++;
+        for(Coordinates virtualCells: this.borderCellsWithVirtualCells) {
+            for (Junction eachJunction : this.validJunctionMap.get(virtualCells)) {
+                this.systemOfEquationsMappingForVirtualCells.put(eachJunction, i);
+                this.junctionsToIndexMappingForVirtualCells.put(i, eachJunction);
+                i++;
+            }
         }
     }
 
-    public Coordinates getCoordinatesForListIndex(int index) throws Exception{
-        return this.coordinatesToIndexMapping.get(index);
+    public Junction getCoordinatesForListIndex(int index) throws Exception{
+        return this.junctionToIndexMapping.get(index);
     }
 
     public int getSizeOfNearFieldCoordinatesForCell(Coordinates centerCell){
         return this.sizeNearField.get(centerCell);
     }
 
-    public List<Coordinates> getNearFieldCoordinatesForCell(Coordinates centerCell){
-        return this.nearFieldMap.get(centerCell);
+    public List<Junction> getOutgoingJunctionsForCell(Coordinates centerCell){
+        return this.validJunctionMap.get(centerCell);
     }
 
     public int getListIndexForVirtualCell(Coordinates centerCoordinates) {
@@ -629,16 +505,12 @@ public class CellArea implements Serializable {
     }
 
 
-
-
-
-    public double getFactorForVirtualCells(Coordinates centerCoordinates, Coordinates otherCell) {
-        return this.factorsForVirtualBorderCells.get(centerCoordinates).get(otherCell);
-    }
-
     public boolean isIsobar() {
         return this.isIsobar;
     }
 
 
+    public int getNumberJunctions() {
+        return numberJunctions;
+    }
 }
