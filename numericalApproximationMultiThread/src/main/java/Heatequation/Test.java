@@ -20,6 +20,11 @@ public class Test {
     public static void main(String[] args) {
         double x = 1000.0/3435;
 
+        long lcm1 = SystemOfEquations.getLcm(-2,496125);
+        long lcm2 = SystemOfEquations.getLcm(8000,-2);
+        long lcm3 = SystemOfEquations.getLcm(5,4);
+        long lcm4 = SystemOfEquations.getLcm(40008,8);
+        long lcm5 = SystemOfEquations.getLcm(15600,13);
 
 
 

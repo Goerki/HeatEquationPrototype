@@ -28,6 +28,7 @@ public class CellArea implements Serializable {
     private boolean isIsobar;
     private HeatequationLogger logger;
     private Map<Coordinates, List<Junction>> validJunctionMap;
+    private Map<Coordinates, List<Junction>> completeJunctionMap;
     private Map<Coordinates, Integer> sizeNearField;
     private int numberJunctions;
     private Map<Junction, Integer> systemOfEquationsMapping;
@@ -180,25 +181,42 @@ public class CellArea implements Serializable {
         }
         this.validJunctionMap = new HashMap<>();
         this.sizeNearField = new HashMap<>();
+        this.completeJunctionMap = new HashMap<>();
         this.numberJunctions = 0;
         for (Coordinates eachCoord: this.coords){
+
             this.validJunctionMap.put(eachCoord, this.getAllValidJunctions(eachCoord, space));
             this.numberJunctions += this.getAllValidJunctions(eachCoord, space).size();
+        }
+
+        //test if system can still be solved
+        for (Coordinates centerCell: this.validJunctionMap.keySet()) {
+            List<Junction> completeList = new ArrayList<>();
+            for (Coordinates eachCell: this.validJunctionMap.keySet())  {
+                for (Junction eachJunction : this.validJunctionMap.get(eachCell)) {
+                    if (eachJunction.getFrom().equals(centerCell) || eachJunction.getTo().equals(centerCell)) {
+                        if (!completeList.contains(eachJunction)) {
+                            completeList.add(eachJunction);
+                        }
+                    }
+                }
+            }
+            completeJunctionMap.put(centerCell, completeList);
         }
     }
 
     private List<Junction> getAllValidJunctions(Coordinates centerCoord, Space space) {
-        List<Junction> junctionList = new ArrayList<>();
+        List<Junction> validJunctionList = new ArrayList<>();
         for (Coordinates neighbor: space.allCells.getAllAdjacentFluidCells(centerCoord)){
             Junction temp;
             try {
                 temp = new Junction(centerCoord, neighbor);
-                junctionList.add(temp);
+                validJunctionList.add(temp);
             } catch (Exception e) {
 
             }
         }
-        return junctionList;
+        return validJunctionList;
     }
 
 
@@ -369,6 +387,9 @@ public class CellArea implements Serializable {
         return this.validJunctionMap.get(centerCell);
     }
 
+    public List<Junction> getAllJunctionsForCell(Coordinates centerCell){
+        return this.completeJunctionMap.get(centerCell);
+    }
     public int getListIndexForVirtualCell(Coordinates centerCoordinates) {
         return systemOfEquationsMappingForVirtualCells.get(centerCoordinates);
     }

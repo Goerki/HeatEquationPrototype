@@ -171,7 +171,7 @@ public class MainThread extends CalculationThread  {
             this.calcPressureForEachArea();
             this.calcPressureCalculationFailureForAllEquations();
             System.out.print("after solid calculation");
-            this.areas.get(0).printPressureForAllCells(space);
+            //this.areas.get(0).printPressureForAllCells(space);
 
             //for debugging purposes only
 
