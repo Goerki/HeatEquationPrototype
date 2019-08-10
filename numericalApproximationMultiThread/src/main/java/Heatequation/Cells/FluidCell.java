@@ -32,7 +32,7 @@ public class FluidCell extends Cell implements Serializable {
         this.calculateInertiaParticleFlowInDirection(Coordinates.direction.ZPLUS1);
     }
 
-    private List<Coordinates.direction> getBordercellDirections(){
+    public List<Coordinates.direction> getBordercellDirections(){
         List<Coordinates.direction> result = new ArrayList<>();
         if (!this.isBorderCell()){
             return result;
@@ -504,5 +504,9 @@ public class FluidCell extends Cell implements Serializable {
 
     public double getEnergy() {
         return this.value*this.numberParticles;
+    }
+
+    public VirtualFluidCell getVirtualBorderCell() {
+        return this.borderCell;
     }
 }

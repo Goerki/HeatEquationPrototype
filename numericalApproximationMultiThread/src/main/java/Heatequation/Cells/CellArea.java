@@ -22,15 +22,11 @@ public class CellArea implements Serializable {
     public double averageTermperature;
     public double particleSum;
     private double pressure;
-    BigDecimal pressureDeci;
-    private double normalization;
-    private boolean isIsochor;
     private boolean isIsobar;
     private HeatequationLogger logger;
     private Map<Coordinates, List<Junction>> validJunctionMap;
-    private Map<Coordinates, List<Junction>> completeJunctionMap;
-    private Map<Coordinates, Integer> sizeNearField;
     private int numberJunctions;
+    private int numberVirtualJunctions;
     private Map<Junction, Integer> systemOfEquationsMapping;
     private Map<Integer,Junction> junctionToIndexMapping;
     private Map<Junction, Integer> systemOfEquationsMappingForVirtualCells;
@@ -61,15 +57,11 @@ public class CellArea implements Serializable {
 
         if (this.borderCellsWithVirtualCells.size()==0){
             this.isIsobar = false;
-            this.isIsochor = true;
-            this.normalization = space.allCells.gasConstant / space.getCellLength()/space.getCellLength()/space.getCellLength()/(double) this.coords.size();
+            //this.normalization = space.allCells.gasConstant / space.getCellLength()/space.getCellLength()/space.getCellLength()/(double) this.coords.size();
         } else {
-            this.isIsochor= false;
-            this.isIsobar = true;
+                        this.isIsobar = true;
 
         }
-        this.calcPressure(space.allCells);
-
         if (this.isFluid){
             for (Coordinates coord: this.coords){
                 space.allCells.setExistingNeighborDirections(coord);
@@ -90,49 +82,7 @@ public class CellArea implements Serializable {
 
     }
 
-    public void calcPressure(Cells space){
-        if (this.isIsobar){
-            this.pressure = space.getCell(this.borderCellsWithVirtualCells.get(0)).getAsFluidCell().getPressureOfBorderCell();
-            this.energyPerCell = this.pressure / space.gasConstant*space.cellSize*space.cellSize*space.cellSize;
-            this.pressureDeci = new BigDecimal(this.pressure);
-            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is isobar. pressure set to " + this.pressure);
-        } else{
 
-            //this.calcAverages(space);
-            //this.pressure = this.particleSum*this.averageTermperature*this.normalization;
-            //this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is not isobar. Old pressure set to " + this.pressure +  " from particleSum " + this.particleSum + " average Temperature " + averageTermperature + " and normalization " + this.normalization);
-
-            if(this.isFluid) {
-                /*
-                double energySum = 0;
-                for (Coordinates eachCell : this.coords) {
-                    energySum += space.getCell(eachCell).getAsFluidCell().getValue();
-                }
-                this.pressure = energySum/(double)this.coords.size();
-                this.pressure *= space.gasConstant * this.particleSum/(double)this.coords.size();
-
-                this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "area is not isobar. NEW pressure set to " + this.pressure +  " from energySum " + energySum);
-
-*/
-                this.pressure =0;
-                this.pressureDeci = new BigDecimal(0);
-                for (Coordinates eachCell : this.coords) {
-                    space.getCell(eachCell).getAsFluidCell().calculatePressure(space.gasConstant, 1);
-                    //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "pressure for cell " + eachCell.toString() + " is "+  space.getCell(eachCell).getAsFluidCell().getPressure());
-                    pressure += space.getCell(eachCell).getAsFluidCell().getPressure();
-                    pressureDeci = pressureDeci.add(space.getCell(eachCell).getAsFluidCell().getPressureAsBigDecimal());
-                }
-                pressureDeci = pressureDeci.divide(BigDecimal.valueOf(this.coords.size()), 50, RoundingMode.HALF_UP);
-
-
-                this.pressure /= this.coords.size();
-                this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "pressure set to " + pressure + " with average pressure of all cells. absolute value: " + pressureDeci);
-                this.pressure = pressureDeci.doubleValue();
-            }
-
-
-        }
-    }
 
 
     public double getPressure() {
@@ -180,35 +130,23 @@ public class CellArea implements Serializable {
             return;
         }
         this.validJunctionMap = new HashMap<>();
-        this.sizeNearField = new HashMap<>();
-        this.completeJunctionMap = new HashMap<>();
         this.numberJunctions = 0;
+        this.numberVirtualJunctions =0;
         for (Coordinates eachCoord: this.coords){
 
             this.validJunctionMap.put(eachCoord, this.getAllValidJunctions(eachCoord, space));
             this.numberJunctions += this.getAllValidJunctions(eachCoord, space).size();
+            this.numberVirtualJunctions += space.allCells.getCell(eachCoord).getAsFluidCell().getNumberOfVirtualBorders();
         }
 
-        //test if system can still be solved
-        for (Coordinates centerCell: this.validJunctionMap.keySet()) {
-            List<Junction> completeList = new ArrayList<>();
-            for (Coordinates eachCell: this.validJunctionMap.keySet())  {
-                for (Junction eachJunction : this.validJunctionMap.get(eachCell)) {
-                    if (eachJunction.getFrom().equals(centerCell) || eachJunction.getTo().equals(centerCell)) {
-                        if (!completeList.contains(eachJunction)) {
-                            completeList.add(eachJunction);
-                        }
-                    }
-                }
-            }
-            completeJunctionMap.put(centerCell, completeList);
-        }
+
     }
 
     private List<Junction> getAllValidJunctions(Coordinates centerCoord, Space space) {
         List<Junction> validJunctionList = new ArrayList<>();
-        for (Coordinates neighbor: space.allCells.getAllAdjacentFluidCells(centerCoord)){
-            Junction temp;
+        Junction temp;
+        for (Coordinates neighbor: space.allCells.getAllAdjacentFluidCells(centerCoord)) {
+
             try {
                 temp = new Junction(centerCoord, neighbor);
                 validJunctionList.add(temp);
@@ -216,6 +154,16 @@ public class CellArea implements Serializable {
 
             }
         }
+
+            if (space.allCells.getCell(centerCoord).getAsFluidCell().isBorderCell()){
+                try {
+                        temp = new Junction(centerCoord, centerCoord, space);
+                        validJunctionList.add(temp);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
         return validJunctionList;
     }
 
@@ -366,30 +314,18 @@ public class CellArea implements Serializable {
             }
 
         }
-        for(Coordinates virtualCells: this.borderCellsWithVirtualCells) {
-            for (Junction eachJunction : this.validJunctionMap.get(virtualCells)) {
-                this.systemOfEquationsMappingForVirtualCells.put(eachJunction, i);
-                this.junctionsToIndexMappingForVirtualCells.put(i, eachJunction);
-                i++;
-            }
-        }
     }
 
-    public Junction getCoordinatesForListIndex(int index) throws Exception{
+    public Junction getJunctionsForListIndex(int index) throws Exception{
         return this.junctionToIndexMapping.get(index);
     }
 
-    public int getSizeOfNearFieldCoordinatesForCell(Coordinates centerCell){
-        return this.sizeNearField.get(centerCell);
-    }
 
     public List<Junction> getOutgoingJunctionsForCell(Coordinates centerCell){
         return this.validJunctionMap.get(centerCell);
     }
 
-    public List<Junction> getAllJunctionsForCell(Coordinates centerCell){
-        return this.completeJunctionMap.get(centerCell);
-    }
+
     public int getListIndexForVirtualCell(Coordinates centerCoordinates) {
         return systemOfEquationsMappingForVirtualCells.get(centerCoordinates);
     }
@@ -449,8 +385,6 @@ public class CellArea implements Serializable {
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "pressure calculated to " + tempPressure + " with average pressure of all cells. absolute value: " + tempPressureDeci);
 
         double difference = tempPressure - this.pressure;
-        BigDecimal differenceDeci = tempPressureDeci.subtract(this.pressureDeci);
-        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "Failure from " + difference + ". absolute value: " + differenceDeci.toString());
 
     }
 
@@ -521,9 +455,6 @@ public class CellArea implements Serializable {
         */
 
 
-    public BigDecimal getBigDeciPressure() {
-        return this.pressureDeci;
-    }
 
 
     public boolean isIsobar() {

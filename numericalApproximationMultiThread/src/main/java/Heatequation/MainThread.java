@@ -2,7 +2,6 @@ package Heatequation;
 
 import Heatequation.Cells.CellArea;
 import Heatequation.Cells.Coordinates;
-import org.apache.commons.math3.analysis.function.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +17,7 @@ public class MainThread extends CalculationThread  {
 
 
 
-    public MainThread(Space space, List<Coordinates> solidCells,List<Coordinates> fluidCells, int numberSteps, List<CellArea> fluidAreas){
+    public MainThread(Space space, List<Coordinates> solidCells,List<Coordinates> fluidCells, int numberSteps, List<CellArea> fluidAreas) throws Exception{
         super(space, solidCells, fluidCells, numberSteps);
         this.numberSteps=numberSteps;
         this.threads = new ArrayList<>();
@@ -29,7 +28,7 @@ public class MainThread extends CalculationThread  {
     }
 
 
-    private void createEquationSystems(Space space, List<CellArea> cellAreas){
+    private void createEquationSystems(Space space, List<CellArea> cellAreas) throws Exception{
         this.equationSystemList = new ArrayList<>();
         for(CellArea area: cellAreas){
             SystemOfEquations tempSystem = new SystemOfEquations(area, space.allCells, space.logger);
@@ -90,7 +89,7 @@ public class MainThread extends CalculationThread  {
     }
 
     private void waitFluidValuesOverwriten(){
-        while (!statusReached(status.FILL_EQUATIONS)){
+        while (!statusReached(status.FILL_BOUNDARIES)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -101,7 +100,18 @@ public class MainThread extends CalculationThread  {
     }
 
 
-    private void waitEquationsFilled(){
+    private void waitBoundariesFilled(){
+        while (!statusReached(status.SOLVE_EQUATION)){
+            try {
+                TimeUnit.MICROSECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return;
+    }
+
+    private void waitSystemSolved(){
         while (!statusReached(status.NORMAILZE_CELLS)){
             try {
                 TimeUnit.MICROSECONDS.sleep(10);
@@ -111,6 +121,7 @@ public class MainThread extends CalculationThread  {
         }
         return;
     }
+
 
     private void waitOverwritingOldValuesReady(){
         while (!statusReached(status.FINISH)){
@@ -167,9 +178,6 @@ public class MainThread extends CalculationThread  {
             this.solidCalculation();
             waitSolidCalculationsReady();
             this.space.logFluidCell("afterSolid       ", logCoords);
-
-            this.calcPressureForEachArea();
-            this.calcPressureCalculationFailureForAllEquations();
             System.out.print("after solid calculation");
             //this.areas.get(0).printPressureForAllCells(space);
 
@@ -246,11 +254,10 @@ public class MainThread extends CalculationThread  {
 
             //fill all equations status 7
             //this.calcPressureForEachArea();
-            this.setAllAveragesInEquations();
 
             this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\nbefore flow from border");
             this.areas.get(0).printPressureForAllCells(space);
-            this.applyParticleFlowFromBorderCellsToAllAreas();
+            //this.applyParticleFlowFromBorderCellsToAllAreas();
 
 
 
@@ -260,25 +267,23 @@ public class MainThread extends CalculationThread  {
             this.areas.get(0).printPressureForAllCells(space);
 
             this.runAllThreads();
-            this.fillEquations(this.equationSystemList, this.areas);
+            this.fillBoundaries(this.equationSystemList, this.areas);
             //this.fillBorderBoundaries();
-            waitEquationsFilled();
+            waitBoundariesFilled();
             this.space.logFluidCell("equationsFilled  ", logCoords);
 
 
+            this.runAllThreads();
+            this.solveEquation(this.equationSystemList, this.areas);
 
+            this.waitSystemSolved();
             //for debugging purposes only
             //this.calcPressureForEachArea();
 
             //solve equations status
 
-            this.solveEquations();
-            if (!this.equationSystemList.isEmpty()) {
-                this.equationSystemList.get(0).draw();
-            }
 
-
-            this.checkEquationResult(logCoords);
+            //this.checkEquationResult(logCoords);
             //non functional:
             this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "sum of all results: " + this.equationSystemList.get(0).getSumOfAllResults());
 
@@ -362,6 +367,7 @@ public class MainThread extends CalculationThread  {
                 initializeNormalizationForAllCellsInArea(eachArea);
             }
         }
+
     }
 
 
@@ -373,44 +379,8 @@ public class MainThread extends CalculationThread  {
         }
     }
 
-    private void calcPressureForEachArea() {
-        for (SystemOfEquations systemOfEquations: this.equationSystemList){
-            systemOfEquations.setPressure();
-            //systemOfEquations.applyPressure();
-
-        }
-    }
-
-    private void applyPressureForEachArea() {
-        for (SystemOfEquations systemOfEquations: this.equationSystemList){
-            systemOfEquations.setPressure();
-            //systemOfEquations.verifyPressureForEachCell();
-            systemOfEquations.applyPressure();
-
-        }
-    }
-
-    private void calcPressureCalculationFailureForAllEquations() {
-        for (SystemOfEquations systemOfEquations: this.equationSystemList){
-            if (!systemOfEquations.isIsobar()) {
-                systemOfEquations.calcPressureCalculationFailure();
-                //systemOfEquations.verifyPressureForEachCell();
-                //systemOfEquations.applyPressure();
-
-            }
-        }
-    }
 
 
-
-
-
-    private void setAllAveragesInEquations(){
-        for (SystemOfEquations eachSystem: this.equationSystemList){
-            eachSystem.setEnergySum();
-
-        }
-    }
 
 
     private void checkEquationResult(Coordinates coords){
@@ -457,11 +427,6 @@ public class MainThread extends CalculationThread  {
 */
     }
 
-    private void fillBorderBoundaries() {
-        for(SystemOfEquations equations: this.equationSystemList){
-            equations.fillBorderBoundaries();
-        }
-    }
 
 
     private void endOfStepReached(int stepNumber){
@@ -469,6 +434,10 @@ public class MainThread extends CalculationThread  {
             space.increaseNumberCalculatedSteps();
         for (CalculationThread thread: this.threads){
             thread.status=status.SOLID_CALC;
+        }
+        for (SystemOfEquations eachSystem: this.equationSystemList){
+            eachSystem.resetResultVector();
+
         }
         //DEBUG
         this.space.allCells.calcAverages();
@@ -480,11 +449,6 @@ public class MainThread extends CalculationThread  {
         }
     }
 
-    private void solveEquations(){
-        for (SystemOfEquations equations: this.equationSystemList){
-            equations.solveEquations();
-        }
-    }
 
     private void runAllThreads(){
         for(CalculationThread thread: this.threads){

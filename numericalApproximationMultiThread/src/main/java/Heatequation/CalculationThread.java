@@ -14,7 +14,7 @@ public class CalculationThread extends Thread implements Serializable {
     protected int numberSteps;
     protected status status;
     public enum status{
-        SOLID_CALC, SOLID_OVERWRITE, INITIALIZE_PARTICLEFLOW, APPLY_DIFF_AND_UPLIFT, CALCULATE_INERTIA, APPLY_INERTIA, FLUID_OVERWRITE, FILL_EQUATIONS, NORMAILZE_CELLS, FINISH
+        SOLID_CALC, SOLID_OVERWRITE, INITIALIZE_PARTICLEFLOW, APPLY_DIFF_AND_UPLIFT, CALCULATE_INERTIA, APPLY_INERTIA, FLUID_OVERWRITE, FILL_BOUNDARIES, SOLVE_EQUATION, NORMAILZE_CELLS, FINISH
     };
 
     public CalculationThread(Space space, List<Coordinates> solidCells,List<Coordinates> fluidCells , int steps){
@@ -50,9 +50,12 @@ public class CalculationThread extends Thread implements Serializable {
             this.status = status.FLUID_OVERWRITE;
         }else if(this.status== status.FLUID_OVERWRITE){
             this.overwriteOldFluidValues();
-            this.status = status.FILL_EQUATIONS;
-        }else if (this.status== status.FILL_EQUATIONS) {
-            this.fillEquations(equationsList, fluidAreaList);
+            this.status = status.FILL_BOUNDARIES;
+        }else if (this.status== status.FILL_BOUNDARIES) {
+            this.fillBoundaries(equationsList, fluidAreaList);
+            this.status = status.SOLVE_EQUATION;
+        }else if (this.status== status.SOLVE_EQUATION) {
+            this.solveEquation(equationsList, fluidAreaList);
             this.status = status.NORMAILZE_CELLS;
         }else if (this.status==status.NORMAILZE_CELLS) {
             this.normalizeCells(equationsList, fluidAreaList);
@@ -66,10 +69,24 @@ public class CalculationThread extends Thread implements Serializable {
             stop();
         }
 
+    protected void solveEquation(List<SystemOfEquations> equationsList, List<CellArea> fluidAreaList) {
+        for (Coordinates eachCoord: this.fluidCells){
+            FluidCell eachCell = this.space.allCells.getCell(eachCoord).getAsFluidCell();
+
+            //get number of area
+            int index = 0;
+            try {
+                index = this.getEquationIndexForCell(fluidAreaList, eachCell);
+                equationsList.get(index).calcResultFor(eachCoord);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
 
 
-
-        protected void overwriteOldSolidValues(){
+    protected void overwriteOldSolidValues(){
             for (Coordinates solidCell: this.solidCells){
                 space.allCells.getCell(solidCell).setOldValue();
             }
@@ -117,7 +134,7 @@ public class CalculationThread extends Thread implements Serializable {
     }
 
 
-    protected void fillEquations(List<SystemOfEquations> equationsList, List<CellArea> areaList){
+    protected void fillBoundaries(List<SystemOfEquations> equationsList, List<CellArea> areaList){
         for (Coordinates eachCoord: this.fluidCells){
             FluidCell eachCell = this.space.allCells.getCell(eachCoord).getAsFluidCell();
 
@@ -125,7 +142,7 @@ public class CalculationThread extends Thread implements Serializable {
             int index = 0;
             try {
                 index = this.getEquationIndexForCell(areaList, eachCell);
-                equationsList.get(index).addToEquations(eachCoord);
+                equationsList.get(index).addToBoundaries(eachCoord);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -208,9 +225,6 @@ public class CalculationThread extends Thread implements Serializable {
                     this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result " + eachJunction + " : " + systemOfEquations.getResultForJunction(eachJunction));
                 }
 
-                if (cell.isBorderCell()){
-                   // this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result virtual cells: " + systemOfEquations.getResultForVirtualCell(logCoords));
-                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -230,20 +244,33 @@ public class CalculationThread extends Thread implements Serializable {
             FluidCell targetCell;
             FluidCell sourceCell;
             try {
-            if (systemOfEquations.getResultForJunction(eachJunction) >0){
-                targetCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
-                sourceCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
-            } else {
-                targetCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
-                sourceCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
-            }
+                if (eachJunction.getFrom() == eachJunction.getTo()){
+                    //virtual cell
+                    double particleFlow = systemOfEquations.getResultForJunction(eachJunction)/space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getNumberOfVirtualBorders();
+                    if (particleFlow >0){
+                        particleFlow/= space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getLastValue();
+                        } else {
+                        particleFlow/= space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getTemperatureOfBorderCell();
+                    }
+                    for (Coordinates.direction eachVirtualBorderDirection: space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getBordercellDirections()){
+                        space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getLastValue());
+                    }
+                } else {
+                    if (systemOfEquations.getResultForJunction(eachJunction) > 0) {
+                        targetCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
+                        sourceCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
+                    } else {
+                        targetCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
+                        sourceCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
+                    }
 
-            double result = systemOfEquations.getAbsoluteResultForJunction(eachJunction);
-            double particleFlow = systemOfEquations.getAbsoluteResultForJunction(eachJunction)/sourceCell.getLastValue();
+                    double result = systemOfEquations.getAbsoluteResultForJunction(eachJunction);
+                    double particleFlow = result / sourceCell.getLastValue();
 
 
-                targetCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, sourceCell.getLastValue());
-                sourceCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-particleFlow, sourceCell.getLastValue());
+                    targetCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, sourceCell.getLastValue());
+                    sourceCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-particleFlow, sourceCell.getLastValue());
+                }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

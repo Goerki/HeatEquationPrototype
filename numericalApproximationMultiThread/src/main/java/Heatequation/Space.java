@@ -127,7 +127,7 @@ public class Space implements Serializable {
         return result;
     }
 
-    public boolean initialize(double time, double deltaT, int numberThreads){
+    public boolean initialize(double time, double deltaT, int numberThreads) throws Exception{
         //Create areas
         if (this.isInitialized)
             return false;
@@ -226,7 +226,7 @@ public class Space implements Serializable {
     }
 
 
-    private void createCalculationThreads(int numberThreads, int steps){
+    private void createCalculationThreads(int numberThreads, int steps)throws Exception{
         setNumberSolidCells();
         this.numberThreads = numberThreads;
         List<Coordinates> fluidCalcCells = this.allCells.getAllFluidCells();

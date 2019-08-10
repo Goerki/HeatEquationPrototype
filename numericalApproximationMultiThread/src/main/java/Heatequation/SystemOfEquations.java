@@ -15,157 +15,170 @@ import java.util.List;
 
 public class SystemOfEquations implements Serializable {
 
-    Matrix equationMatrix;
-    Matrix boundaryVector;
-    Matrix resultVector;
 
+    double[] boundaryVector;
+    double[] resultVector;
     double[][] gaussOperators;
     long[][] workingMatrix;
     CellArea area;
     Cells cells;
     int dimension;
     HeatequationLogger logger;
-    private BigDecimal pressure;
-    private double energySum;
-    Coordinates logCoords;
-    private double average;
     double pressureFailure;
-    int counter5;
-    int counter3;
-    int counter2;
-    boolean isInitialized;
+    private boolean isInitialized;
 
 
 
-    SystemOfEquations(CellArea area, Cells cells, HeatequationLogger logger){
+    SystemOfEquations(CellArea area, Cells cells, HeatequationLogger logger) throws Exception{
         this.logger = logger;
         this.area = area;
         this.dimension = area.getNumberJunctions();
         this.pressureFailure =0;
 
 
-        this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "dimension: " + dimension);
-        //double[][] matrix = new double[this.dimension][this.dimension];
-        this.equationMatrix = new Matrix(this.dimension, this.dimension);
-        this.boundaryVector = new Matrix( this.dimension, 1);
-        this.resultVector =  new Matrix( this.dimension,1);
+
+        double size = dimension*dimension*64.0/(1024.0*1024.0);
+        this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "dimension: " + dimension + " each matrix will take about " + size + " MB");
+        this.boundaryVector = new double[dimension];
+        this.resultVector =  new double[dimension];
         this.gaussOperators = new double[this.dimension][this.dimension];
         this.workingMatrix = new long[this.dimension][this.dimension];
-
-
         this.cells = cells;
         resetEquationsAndboundaries();
-        this.logCoords = new Coordinates(2,4,2);
-        //this.createGaussMatrix();
-        this.isInitialized = false;
-        int counter5=1;
-        int counter3=1;
-        int counter2=1;
+        //this.logCoords = new Coordinates(2,4,2);
+        this.createGaussMatrix();
     }
 
-    private void createGaussMatrix() {
+    private void createGaussMatrix() throws Exception{
+
+        //fill working matrix
+        for (Coordinates eachCoord: this.area.coords){
+            this.addToEquations(eachCoord);
+
+        }
         //System.out.println("init: " + this.drawTable(this.workingMatrix));
+        this.printVektorSumme();
         this.createTriangleMatrix();
         //System.out.println("dreieck: " + this.drawTable(this.workingMatrix));
+        this.printVektorSumme();
         this.createDiagonalMatrix();
         //System.out.println("diagonal: " + this.drawTable(this.workingMatrix));
         //System.out.print("matrix: " + this.workingMatrix.toString());
+        this.printVektorSumme();
         this.normalizeSystem();
+
+        this.printVektorSumme();
+        this.isInitialized=true;
 
         //System.out.println("Gauß matrix: " + this.drawTable(this.gaussOperators));
 
     }
 
+    private void printVektorSumme() throws Exception {
+        for (int col=0; col < dimension; col ++){
+            double sum =0;
+            double absoluteSum=0;
+
+            for (int row=0; row < dimension; row ++){
+                absoluteSum += Math.abs(this.gaussOperators[row][col]);
+                sum = this.gaussOperators[row][col];
+            }
+            this.logger.logMessage(HeatequationLogger.LogLevel.ERROR ,"Summe für " + this.area.getJunctionsForListIndex(col) + " : " +sum + " absolute: " + absoluteSum);
+
+        }
+    }
+
+
     private void resetEquationsAndboundaries(){
-        for (int i = 0; i < equationMatrix.getColumnDimension(); i++){
-            for (int j = 0; j < equationMatrix.getColumnDimension(); j++){
-                this.equationMatrix.set(i,j,0.0);
+        for (int i = 0; i < dimension; i++){
+            for (int j = 0; j <dimension; j++){
                 this.gaussOperators[i][j] =0;
                 this.workingMatrix[i][j] =0;
                 if (i==j){
                     this.gaussOperators[i][j] =1.0;
                 }
             }
-            boundaryVector.set(i,0, 0.0);
-            resultVector.set(i,0, 0.0);
+            boundaryVector[i] =0;
+            resultVector[i]=0;
         }
     }
 
 
-
-    public void setEnergySum() {
-        this.energySum=0;
-        for (Coordinates otherCell : this.area.coords) {
-
-            this.energySum+=this.cells.getCell(otherCell).getAsFluidCell().getLastNumberParticles() * this.cells.getCell(otherCell).getAsFluidCell().getLastValue();
-        }
-        this.average = this.energySum/(double) this.area.coords.size();
-    }
-
-
-
-    public void addToEquations(Coordinates centerCoordinates){
-        for (Junction rowJunction: this.area.getOutgoingJunctionsForCell(centerCoordinates)){
+    public void addToBoundaries(Coordinates centerCoordinates) {
+        for (Junction rowJunction : this.area.getOutgoingJunctionsForCell(centerCoordinates)) {
             int rowIndex = area.getListIndexForJunction(rowJunction);
-            this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "junction from " + rowJunction.getFrom().toString() + " to " + rowJunction.getTo().toString() +  " with index " + rowIndex);
+            if (rowJunction.getTo() == rowJunction.getFrom()){
+                this.boundaryVector[rowIndex] = cells.getCell(rowJunction.getTo()).getAsFluidCell().getEnergy() - cells.getCell(rowJunction.getFrom()).getAsFluidCell().getVirtualBorderCell().getEnergy();
 
-            //from cell
-            for (Junction outgoingJunction: this.area.getOutgoingJunctionsForCell(centerCoordinates)){
-                if (outgoingJunction.equals(rowJunction)){
-                    this.equationMatrix.set(rowIndex, rowIndex, -2.0);
-                    this.workingMatrix[rowIndex][rowIndex] = -2;
-                    this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "diagonal entry for matrix "+  rowIndex + " added");
+            } else {
 
-                } else {
-                    this.equationMatrix.set(rowIndex, area.getListIndexForJunction(outgoingJunction),-1.0);
-                    //this.equationMatrix.set(area.getListIndexForJunction(outgoingJunction),rowIndex,1.0);
-                    this.workingMatrix[rowIndex][area.getListIndexForJunction(outgoingJunction)] = -1;
-                    //this.workingMatrix[area.getListIndexForJunction(outgoingJunction)][rowIndex] = 1;
-                    this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "junction from " + outgoingJunction.getFrom().toString() + " to " + outgoingJunction.getTo().toString() +  " with index " + rowIndex + " and " + area.getListIndexForJunction(outgoingJunction) + " set to -1");
-                }
-            }
-
-            //to cell
-            for (Junction outgoingJunctionFromTarget: this.area.getOutgoingJunctionsForCell(rowJunction.getTo())){
-                    this.equationMatrix.set(rowIndex, area.getListIndexForJunction(outgoingJunctionFromTarget), 1);
-                //this.equationMatrix.set( area.getListIndexForJunction(outgoingJunctionFromTarget),rowIndex, -1);
-                this.workingMatrix[rowIndex][area.getListIndexForJunction(outgoingJunctionFromTarget)] = 1;
-                //this.workingMatrix[area.getListIndexForJunction(outgoingJunctionFromTarget)][rowIndex] = -1;
-                this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "junction from " + outgoingJunctionFromTarget.getFrom().toString() + " to " + outgoingJunctionFromTarget.getTo().toString() +  " with index " + rowIndex + " and " + area.getListIndexForJunction(outgoingJunctionFromTarget) + " set to +1");
-                }
-
-
-            //boundary
-            this.boundaryVector.set(rowIndex, 0, cells.getCell(rowJunction.getTo()).getAsFluidCell().getEnergy() - cells.getCell(rowJunction.getFrom()).getAsFluidCell().getEnergy());
-
+                //boundary
+                this.boundaryVector[rowIndex] = cells.getCell(rowJunction.getTo()).getAsFluidCell().getEnergy() - cells.getCell(rowJunction.getFrom()).getAsFluidCell().getEnergy();
 
             }
-
-
-
 
         }
+    }
+
+
+
+
+
+
+
+
+
+
+    private void addToEquations(Coordinates centerCoordinates){
+        for (Junction rowJunction: this.area.getOutgoingJunctionsForCell(centerCoordinates)) {
+            int rowIndex = area.getListIndexForJunction(rowJunction);
+            if (rowIndex == this.dimension-1){
+                System.out.println("hm?");
+
+            }
+            //this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "junction from " + rowJunction.getFrom().toString() + " to " + rowJunction.getTo().toString() +  " with index " + rowIndex);
+
+            if (rowJunction.getTo() == rowJunction.getFrom()) {
+                this.workingMatrix[rowIndex][rowIndex] = -2;
+                for (Junction outgoingJunctionFromTarget : this.area.getOutgoingJunctionsForCell(rowJunction.getTo())) {
+                    if (outgoingJunctionFromTarget.getTo() != outgoingJunctionFromTarget.getFrom()){
+                        this.workingMatrix[rowIndex][area.getListIndexForJunction(outgoingJunctionFromTarget)] = -1;
+                    }
+                }
+
+
+            } else {
+                //from cell
+                for (Junction outgoingJunction : this.area.getOutgoingJunctionsForCell(centerCoordinates)) {
+                    if (outgoingJunction.equals(rowJunction)) {
+                        this.workingMatrix[rowIndex][rowIndex] = -1;
+
+
+                    } else {
+
+                        this.workingMatrix[rowIndex][area.getListIndexForJunction(outgoingJunction)] = -1;
+
+                    }
+                }
+
+                //to cell
+                for (Junction outgoingJunctionFromTarget : this.area.getOutgoingJunctionsForCell(rowJunction.getTo())) {
+
+                    this.workingMatrix[rowIndex][area.getListIndexForJunction(outgoingJunctionFromTarget)] = 1;
+
+                    //this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "junction from " + outgoingJunctionFromTarget.getFrom().toString() + " to " + outgoingJunctionFromTarget.getTo().toString() +  " with index " + rowIndex + " and " + area.getListIndexForJunction(outgoingJunctionFromTarget) + " set to +1");
+                }
+
+            }
+        }
+        }
+
 
         public static long getLcm(long num1, long num2){
         if (num1 == 0 || num2 == 0){
             return 0;
         }
 
-         long bigNumber;
-         long smallNumber;
-        //get big and small absolute number
-            /*
-        if (num1 == num2){
-            return num1;
-
-        } else if (num1 < num2){
-            bigNumber = Math.abs(num2);
-            smallNumber = Math.abs(num1);
-        } else {
-            bigNumber = Math.abs(num1);
-            smallNumber = Math.abs(num2);
-        }
-        */
         //calc
             long calc1;
             long calc2;
@@ -190,18 +203,9 @@ public class SystemOfEquations implements Serializable {
                 calc1= calc2;
             } else {
 
-/*
-                while (calc1 % 2 == 0 && calc2 % 2 == 0) {
-                    calc1 /= 2;
-                    calc2 /= 2;
 
-                }
-                */
             }
 
-
-
-            System.out.println("getting lcm for number1: " + num1 + " and number 2: " + num2);
             int steps =0;
             while (calc1 != calc2) {
 
@@ -210,11 +214,10 @@ public class SystemOfEquations implements Serializable {
                 } else {
                     calc1 -= calc2;
                 }
-                System.out.println("number1: " + calc1 + " and number 2: " + calc2 + "after step " + steps);
+
                 steps++;
                 if (steps > 1000){
 
-                    System.out.println("hat nicht so ganz funktioniert....  " + num1 + " und " + num2);
                     if (Math.abs(num1) > Math.abs(num2)){
                         calc1= Math.abs(num1);
                         calc2 = Math.abs(num2);
@@ -242,68 +245,15 @@ public class SystemOfEquations implements Serializable {
 
 
             long product = num1 * num2;
-            System.out.println("lcm = : " + product + " / " + calc1 +" =  "+num1*num2/calc1 + " after " + steps + " steps");
             return Math.abs(num1*num2/calc1);
     }
 
-    public void solveEquations(){
-        //double[][] dreieck = this.dreiecksMatrix();
-        //this.getResultsforDreieck(dreieck);
 
-        if (!this.isInitialized){
-            this.createGaussMatrix();
-            this.isInitialized=true;
-        }
-
-        long start = System.currentTimeMillis();
-
-
-
-
-        double[] results = this.calcResults();
-
-
-
-
-
-
-        try {
-            //this.resultVector = this.equationMatrix.solve(boundaryVector);
-
-            double[][]resMatrix = new double[dimension][1];
-            for (int i=0; i < dimension; i++){
-                resMatrix[i][0]= results[i];
-
-
-
-            }
-
-
-            this.resultVector = new Matrix(resMatrix);
-
-
-
-
-            long duration = System.currentTimeMillis() -  start;
-            this.logger.logMessage(HeatequationLogger.LogLevel.INFO,"solving of the System with " + this.dimension + " lines took " + duration + "milliseconds");
-
-
-
-            System.out.print(resultVector.toString());
-        } catch (Exception e) {
-            System.out.print("\n\nMAtRIX HAT KEINEN VOLLEN RANG!!\n");
-            if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
-                this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "\n\nMARIX HAT KEINEN VOLLEN RANG!!\n");
-                this.draw();
-                this.setResultsToZero();
-            }
-        }
-
-    }
 
     private void normalizeSystem() {
         for (int i=0; i< dimension; i++){
             this.divideEachEntryOfRowFromGaussOperators(i,this.workingMatrix[i][i]);
+            this.workingMatrix[i][i] =1;
         }
     }
 
@@ -314,9 +264,8 @@ public class SystemOfEquations implements Serializable {
         double[] result = new double[dimension];
         for (int row=0; row < dimension; row++){
             for (int col =0; col < dimension; col ++){
-                result[row]+= gaussOperators[row][col] * this.boundaryVector.get(col,0);
+                result[row]+= gaussOperators[row][col] * this.boundaryVector[col];
 
-                //matrix multiplikation
             }
         }
         return result;
@@ -362,7 +311,7 @@ public class SystemOfEquations implements Serializable {
                         //TODO: Check performance of calculation of 0 vs if statement
                         if (this.workingMatrix[rowIndex][columnIndex] != 0 || this.workingMatrix[diagonalIndex][columnIndex] != 0) {
                             workingRow[columnIndex] += diagonalRow[columnIndex];
-                            System.out.println("triangle calculated for " + rowIndex + " and "+columnIndex + " for diagonal " +diagonalIndex );
+                            //System.out.println("triangle calculated for " + rowIndex + " and "+columnIndex + " for diagonal " +diagonalIndex );
                         }
 
                     }
@@ -388,17 +337,6 @@ public class SystemOfEquations implements Serializable {
         return result;
     }
 
-    /*
-    private void multiplyEachEntryOfRowFromGaussOperators(int rowIndex, double workingFactor) {
-        for (int col =0; col < this.dimension; col ++){
-            if (this.gaussOperators[rowIndex][col] != 0) {
-
-
-                this.gaussOperators[rowIndex][col] = this.gaussOperators[rowIndex][col] * workingFactor;
-            }
-        }
-    }
-    */
 
     private void divideEachEntryOfRowFromGaussOperators(int rowIndex, double workingFactor) {
         if (workingFactor ==0){
@@ -434,7 +372,7 @@ public class SystemOfEquations implements Serializable {
                         //TODO: Check performance of calculation of 0 vs if statement
                         if (this.workingMatrix[rowIndex][columnIndex] != 0) {
                             workingRow[columnIndex] += diagonalRow[columnIndex];
-                            System.out.println("calculated diagonal for " + rowIndex + " and "+columnIndex + " for diagonal " + diagonalIndex);
+                            //System.out.println("calculated diagonal for " + rowIndex + " and "+columnIndex + " for diagonal " + diagonalIndex);
                         }
 
                     }
@@ -476,7 +414,6 @@ public class SystemOfEquations implements Serializable {
                     workingRow[i]/=5;
                 }
             }
-            this.counter5++;
             multiplyer*=5;
         }
         while (this.rowDividibleBy(workingRow, 3)){
@@ -485,7 +422,6 @@ public class SystemOfEquations implements Serializable {
                     workingRow[i]/=3;
                 }
             }
-            this.counter3++;
             multiplyer*=3;
         }
         while (this.rowDividibleBy(workingRow, 2)){
@@ -494,7 +430,6 @@ public class SystemOfEquations implements Serializable {
                     workingRow[i]/=2;
                 }
             }
-            this.counter2++;
             multiplyer*=2;
         }
         this.divideEachEntryOfRowFromGaussOperators(rowIndex, multiplyer);
@@ -511,42 +446,26 @@ public class SystemOfEquations implements Serializable {
         return true;
     }
 
-    private void setResultsToZero() {
-        for (int i = 0; i < equationMatrix.getColumnDimension(); i++) {
-            resultVector.set(i, 0, 0.0);
-        }
 
-    }
 
 
     public double getResultForListIndex(int index){
-        return resultVector.get(index,0);
+        return resultVector[index];
     }
 
     public double getResultForJunction(Junction junc) throws Exception {
 
         int index = this.area.getListIndexForJunction(junc);
-        return resultVector.get(index,0);
+        return resultVector[index];
     }
 
     public double getAbsoluteResultForJunction(Junction junc) throws Exception {
 
         int index = this.area.getListIndexForJunction(junc);
-        return Math.abs(resultVector.get(index,0));
+        return Math.abs(resultVector[index]);
     }
 
 
-    public void fillBorderBoundaries() {
-        /*
-        for(Coordinates virtualCoords: this.area.getborderCellsWithVirtualCells()){
-            equations[this.dimension-1][this.area.getListIndexForVirtualCell(virtualCoords)] = 1;
-
-        }
-        this.area.calcAverages(this.cells);
-        this.boundaries[dimension-1] = this.area.particleSum * this.area.averageTermperature;
-
-*/
-    }
 
     public void draw(){
         if (this.logger.logLevelEnabled(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS)) {
@@ -559,6 +478,8 @@ public class SystemOfEquations implements Serializable {
         int virtualCellCounter = 1;
         double absoluteSum =0;
         double relativeSum =0;
+        builder.append(this.drawTable(this.gaussOperators));
+        /*
         for (int line =0 ; line < this.equationMatrix.getColumnDimension(); line++){
                 try {
                     builder.append(line+  " : "+ this.area.getCoordinatesForListIndex(line).toString());
@@ -589,6 +510,7 @@ public class SystemOfEquations implements Serializable {
                 }
             }
         }
+        */
 
 
         builder.append("\nSumme aller Ergebnisse: " + absoluteSum );
@@ -627,7 +549,7 @@ public class SystemOfEquations implements Serializable {
 
     public double getSumOfAllResults(){
         double sum = 0;
-        for (int i=0; i< this.resultVector.getColumnDimension(); i++){
+        for (int i=0; i<dimension; i++){
             sum += this.getResultForListIndex(i);
 
         }
@@ -635,134 +557,26 @@ public class SystemOfEquations implements Serializable {
     }
 
 
-    public void setPressure() {
-        this.area.calcPressure(this.cells);
-        this.pressure = this.area.getBigDeciPressure();
-    }
-
-    public void applyPressure() {
-        for (Coordinates eachCell: this.area.coords){
-            this.cells.getCell(eachCell).getAsFluidCell().applyPressure(pressure.doubleValue(), this.cells.gasConstant, 1);
-
-        }
-    }
-
-    public void verifyPressureForEachCell() {
-        for (Coordinates eachCell: this.area.coords){
-            this.logger.logMessage(HeatequationLogger.LogLevel.INFO, eachCell.toString() + ": " +this.cells.getCell(eachCell).getAsFluidCell().verifyPressure(pressure.doubleValue(), this.cells.gasConstant, 1));
-
-        }
-    }
-
-    public void calcPressureCalculationFailure() {
-        this.pressureFailure += this.area.getPressureCalculationFailure(this.cells);
-
-        double difference = this.pressure.doubleValue() +(pressureFailure/(double)this.dimension);
-
-
-        if (difference!= this.pressure.doubleValue()){
-            this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "difference is big enough: " + pressureFailure/(double)this.dimension + "adds to "+ (this.pressure.doubleValue() +(pressureFailure/(double)this.dimension))+" pressure changed from " + this.pressure.doubleValue() + " to " + (this.pressure.doubleValue() + (pressureFailure/(double)this.dimension)));
-            String xString = String.valueOf(this.pressureFailure);
-            StringBuilder builder;
-            if (xString.charAt(0)== '-'){
-                builder = new StringBuilder("-0");
-                builder.append(xString.substring(2));
-            } else {
-                builder = new StringBuilder("0");
-                builder.append(xString.substring(1));
-            }
-            double newpressureFailure = Double.parseDouble(builder.toString());
-
-            this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "failure from: "+this.pressureFailure + " to " + newpressureFailure) ;
-            this.pressureFailure = newpressureFailure;
-        } else {
-            this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "difference is 0. Combined Failure: " + (-1*this.pressureFailure));
-        }
-    }
-
     public boolean isIsobar() {
         return this.area.isIsobar();
     }
 
 
+    public void calcResultFor(Coordinates eachCoord) {
+        for (Junction eachJunction: this.area.getOutgoingJunctionsForCell(eachCoord)){
 
-/*
-    SystemOfEquations(Cell[][][] cells){
-        this.dimension = cells.length;
-        this.equations = new double[dimension*dimension*dimension][dimension*dimension*dimension];
-        System.out.print("dimension: " + this.dimension);
-        this.init(cells);
+            int row = this.area.getListIndexForJunction(eachJunction);
+                for (int col =0; col < dimension; col ++){
+                    this.resultVector[row]+= gaussOperators[row][col] * this.boundaryVector[col];
 
-    }
-
-
-    public void init(Cell[][][] cells){
-        Coordinates coords = new Coordinates(0,0,0, dimension);
-        int i =0;
-        equations[i][Coordinates.getNumberInSystem(coords)] = -1;
-        try {
-            equations[i][Coordinates.getNumberInSystem(coords.getCoordsX(1))] = cells[coords.x][coords.y][coords.z].getLastFluidValue()/
-                    cells[coords.x+1][coords.y][coords.z].getLastFluidValue() + 1;
-        } catch (Exception e) {
-        }
-        try {
-            equations[i][Coordinates.getNumberInSystem(coords.getCoordsY(1))] = cells[coords.x][coords.y][coords.z].getLastFluidValue()/
-                    cells[coords.x][coords.y+1][coords.z].getLastFluidValue() + 1;
-        } catch (Exception e) {
-        }
-        try {
-            equations[i][Coordinates.getNumberInSystem(coords.getCoordsZ(1))] = cells[coords.x][coords.y][coords.z].getLastFluidValue()/
-                    cells[coords.x][coords.y][coords.z+1].getLastFluidValue() + 1;
-        } catch (Exception e) {
+                }
+            }
         }
 
-        while (coords.increase()){
-            System.out.print("coords: " + coords.toString());
-            i++;
-            equations[i][Coordinates.getNumberInSystem(coords)] = -1;
-            try {
-                equations[i][Coordinates.getNumberInSystem(coords.getCoordsX(1))] = cells[coords.x][coords.y][coords.z].getLastFluidValue()/
-                        cells[coords.x+1][coords.y][coords.z].getLastFluidValue() + 1;
-            } catch (Exception e) {
-            }
-            try {
-                equations[i][Coordinates.getNumberInSystem(coords.getCoordsX(-1))] = cells[coords.x][coords.y][coords.z].getLastFluidValue()/
-                        cells[coords.x-1][coords.y][coords.z].getLastFluidValue() + 1;
-            } catch (Exception e) {
-            }
-            try {
-                equations[i][Coordinates.getNumberInSystem(coords.getCoordsY(1))] = cells[coords.x][coords.y][coords.z].getLastFluidValue()/
-                        cells[coords.x][coords.y+1][coords.z].getLastFluidValue() + 1;
-            } catch (Exception e) {
-            }
-            try {
-                equations[i][Coordinates.getNumberInSystem(coords.getCoordsY(-1))] = cells[coords.x][coords.y][coords.z].getLastFluidValue()/
-                        cells[coords.x][coords.y-1][coords.z].getLastFluidValue() + 1;
-            } catch (Exception e) {
-            }
-            try {
-                equations[i][Coordinates.getNumberInSystem(coords.getCoordsZ(1))] = cells[coords.x][coords.y][coords.z].getLastFluidValue()/
-                        cells[coords.x][coords.y][coords.z+1].getLastFluidValue() + 1;
-            } catch (Exception e) {
-            }
-            try {
-                equations[i][Coordinates.getNumberInSystem(coords.getCoordsZ(-1))] = cells[coords.x][coords.y][coords.z].getLastFluidValue()/
-                        cells[coords.x][coords.y][coords.z-1].getLastFluidValue() + 1;
-            } catch (Exception e) {
-            }
-
-
+    public void resetResultVector() {
+        for (int i=0; i< dimension; i++){
+            this.resultVector[i] =0;
         }
     }
-
-
-
-    public void solve(Cell[][][] boundaryCondition){
-        double[] boundaries = Coordinates.transformTo1DimensionLastValue(boundaryCondition);
-
-
-
-    }
-
-*/
 }
+

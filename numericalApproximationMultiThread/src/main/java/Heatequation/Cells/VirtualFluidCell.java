@@ -8,7 +8,7 @@ public class VirtualFluidCell {
     private boolean isOnTop;
     private boolean isOnBottom;
     private double pressure;
-    private double numberParticles;
+    private double energy;
     private List<Coordinates.direction> directions;
 
     public VirtualFluidCell(int numberBorders, double temp, double gasConstant, List<Coordinates.direction> directions){
@@ -16,7 +16,8 @@ public class VirtualFluidCell {
         this.temperature = temp;
         isOnTop = false;
         this.pressure = 1;
-        this.numberParticles = this.pressure/temp*gasConstant;
+        double numberParticles = this.pressure/temp*gasConstant;
+        this.energy = numberParticles * this.temperature;
         this.directions = directions;
     }
 
@@ -50,5 +51,9 @@ public class VirtualFluidCell {
 
     public List<Coordinates.direction> getDirections() {
         return directions;
+    }
+
+    public double getEnergy() {
+        return this.energy;
     }
 }
