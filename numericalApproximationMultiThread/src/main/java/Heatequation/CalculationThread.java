@@ -239,57 +239,61 @@ public class CalculationThread extends Thread implements Serializable {
         }
         */
 
-        for (Junction eachJunction: systemOfEquations.area.getOutgoingJunctionsForCell(centerCell)){
-            //add temperatures and particle flow to cell
-            FluidCell targetCell;
-            FluidCell sourceCell;
-            try {
-                if (eachJunction.getFrom() == eachJunction.getTo()){
-                    //virtual cell
-                    double particleFlow = systemOfEquations.getResultForJunction(eachJunction)/space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getNumberOfVirtualBorders();
-                    if (particleFlow >0){
-                        particleFlow/= space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getLastValue();
-                        } else {
-                        particleFlow/= space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getTemperatureOfBorderCell();
-                    }
-                    for (Coordinates.direction eachVirtualBorderDirection: space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getBordercellDirections()){
-                        space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getLastValue());
-                    }
-                } else {
-                    if (systemOfEquations.getResultForJunction(eachJunction) > 0) {
-                        targetCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
-                        sourceCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
+        try {
+            for (Junction eachJunction: systemOfEquations.area.getOutgoingJunctionsForCell(centerCell)){
+                //add temperatures and particle flow to cell
+                FluidCell targetCell;
+                FluidCell sourceCell;
+                try {
+                    if (eachJunction.getFrom() == eachJunction.getTo()){
+                        //virtual cell
+                        double particleFlow = systemOfEquations.getResultForJunction(eachJunction)/space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getNumberOfVirtualBorders();
+                        if (particleFlow >0){
+                            particleFlow/= space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getLastValue();
+                            } else {
+                            particleFlow/= space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getTemperatureOfBorderCell();
+                        }
+                        for (Coordinates.direction eachVirtualBorderDirection: space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getBordercellDirections()){
+                            space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getLastValue());
+                        }
                     } else {
-                        targetCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
-                        sourceCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
+                        if (systemOfEquations.getResultForJunction(eachJunction) > 0) {
+                            targetCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
+                            sourceCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
+                        } else {
+                            targetCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
+                            sourceCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
+                        }
+
+                        double result = systemOfEquations.getAbsoluteResultForJunction(eachJunction);
+                        double particleFlow = result / sourceCell.getLastValue();
+
+
+                        targetCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, sourceCell.getLastValue());
+                        sourceCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-particleFlow, sourceCell.getLastValue());
                     }
-
-                    double result = systemOfEquations.getAbsoluteResultForJunction(eachJunction);
-                    double particleFlow = result / sourceCell.getLastValue();
-
-
-                    targetCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, sourceCell.getLastValue());
-                    sourceCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-particleFlow, sourceCell.getLastValue());
-                }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                //add flow from virtual cells
-                if (cell.isBorderCell()) {
-                    //cell.addToNumberParticlesForTemperatureCalculationFromVirtualBorderCell(systemOfEquations.getResultForVirtualCell(centerCell));
-                }
-
-
-                if (centerCell.equals(logCoords)) {
-                    try {
-                        this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result " + eachJunction + ": " + systemOfEquations.getResultForJunction(eachJunction));
-
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                    //add flow from virtual cells
+                    if (cell.isBorderCell()) {
+                        //cell.addToNumberParticlesForTemperatureCalculationFromVirtualBorderCell(systemOfEquations.getResultForVirtualCell(centerCell));
+                    }
 
+
+                    if (centerCell.equals(logCoords)) {
+                        try {
+                            this.space.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "result " + eachJunction + ": " + systemOfEquations.getResultForJunction(eachJunction));
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
                 }
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     protected void calulateInertiaParticleFlow() {

@@ -11,6 +11,7 @@ import java.awt.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SystemOfEquations implements Serializable {
@@ -19,7 +20,7 @@ public class SystemOfEquations implements Serializable {
     double[] boundaryVector;
     double[] resultVector;
     double[][] gaussOperators;
-    long[][] workingMatrix;
+    double[][] workingMatrix;
     CellArea area;
     Cells cells;
     int dimension;
@@ -42,7 +43,7 @@ public class SystemOfEquations implements Serializable {
         this.boundaryVector = new double[dimension];
         this.resultVector =  new double[dimension];
         this.gaussOperators = new double[this.dimension][this.dimension];
-        this.workingMatrix = new long[this.dimension][this.dimension];
+        this.workingMatrix = new double[this.dimension][this.dimension];
         this.cells = cells;
         resetEquationsAndboundaries();
         //this.logCoords = new Coordinates(2,4,2);
@@ -105,18 +106,23 @@ public class SystemOfEquations implements Serializable {
 
 
     public void addToBoundaries(Coordinates centerCoordinates) {
-        for (Junction rowJunction : this.area.getOutgoingJunctionsForCell(centerCoordinates)) {
-            int rowIndex = area.getListIndexForJunction(rowJunction);
-            if (rowJunction.getTo() == rowJunction.getFrom()){
-                this.boundaryVector[rowIndex] = cells.getCell(rowJunction.getTo()).getAsFluidCell().getEnergy() - cells.getCell(rowJunction.getFrom()).getAsFluidCell().getVirtualBorderCell().getEnergy();
+        try {
+            for (Junction rowJunction : this.area.getOutgoingJunctionsForCell(centerCoordinates)) {
+                int rowIndex = area.getListIndexForJunction(rowJunction);
+                if (rowJunction.getTo() == rowJunction.getFrom()){
+                    this.boundaryVector[rowIndex] = cells.getCell(rowJunction.getTo()).getAsFluidCell().getEnergy() - cells.getCell(rowJunction.getFrom()).getAsFluidCell().getVirtualBorderCell().getEnergy();
 
-            } else {
+                } else {
 
-                //boundary
-                this.boundaryVector[rowIndex] = cells.getCell(rowJunction.getTo()).getAsFluidCell().getEnergy() - cells.getCell(rowJunction.getFrom()).getAsFluidCell().getEnergy();
+                    //boundary
+                    this.boundaryVector[rowIndex] = cells.getCell(rowJunction.getTo()).getAsFluidCell().getEnergy() - cells.getCell(rowJunction.getFrom()).getAsFluidCell().getEnergy();
+
+                }
 
             }
-
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
         }
     }
 
@@ -129,49 +135,157 @@ public class SystemOfEquations implements Serializable {
 
 
 
-    private void addToEquations(Coordinates centerCoordinates){
-        for (Junction rowJunction: this.area.getOutgoingJunctionsForCell(centerCoordinates)) {
-            int rowIndex = area.getListIndexForJunction(rowJunction);
-            if (rowIndex == this.dimension-1){
-                System.out.println("hm?");
-
+    private void addToEquations(Coordinates centerCoordinates) {
+        List<Junction> outgoingJunctions;
+            try {
+                outgoingJunctions = this.area.getOutgoingJunctionsForCell(centerCoordinates);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return;
             }
-            //this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "junction from " + rowJunction.getFrom().toString() + " to " + rowJunction.getTo().toString() +  " with index " + rowIndex);
 
-            if (rowJunction.getTo() == rowJunction.getFrom()) {
-                this.workingMatrix[rowIndex][rowIndex] = -2;
-                for (Junction outgoingJunctionFromTarget : this.area.getOutgoingJunctionsForCell(rowJunction.getTo())) {
-                    if (outgoingJunctionFromTarget.getTo() != outgoingJunctionFromTarget.getFrom()){
-                        this.workingMatrix[rowIndex][area.getListIndexForJunction(outgoingJunctionFromTarget)] = -1;
+            for (Junction rowJunction :outgoingJunctions) {
+                int rowIndex = area.getListIndexForJunction(rowJunction);
+                if (rowIndex == this.dimension - 1) {
+                    System.out.println("hm?");
+
+                }
+                //this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "junction from " + rowJunction.getFrom().toString() + " to " + rowJunction.getTo().toString() +  " with index " + rowIndex);
+
+                if (rowJunction.getTo() == rowJunction.getFrom()) {
+                    this.workingMatrix[rowIndex][rowIndex] --;
+                    try {
+                        for (Junction outgoingJunctionFromTarget : this.area.getOutgoingJunctionsForCell(rowJunction.getTo())) {
+                            this.workingMatrix[rowIndex][area.getListIndexForJunction(outgoingJunctionFromTarget)]--;
+                        }
+                    } catch (Exception e) {
                     }
+
+                    try {
+                        for (Junction incomingJunctionFromTarget : this.area.getIncomingJunctionsForCell(rowJunction.getTo())) {
+                            this.workingMatrix[rowIndex][area.getListIndexForJunction(incomingJunctionFromTarget)]++;
+                        }
+                    } catch (Exception e) {
+                    }
+
+                } else {
+                    //from cell
+                    try {
+                        for (Junction outgoingJunction : this.area.getOutgoingJunctionsForCell(rowJunction.getFrom())) {
+                            int incomingIndex = area.getListIndexForJunction(outgoingJunction);
+                            this.workingMatrix[rowIndex][incomingIndex]--;
+                        }
+                    } catch (Exception e) {
+
+                    }
+                    try {
+                        for (Junction incomingJunction : this.area.getIncomingJunctionsForCell(rowJunction.getFrom())) {
+                            int incomingIndex = area.getListIndexForJunction(incomingJunction);
+                            this.workingMatrix[rowIndex][incomingIndex]++;
+                        }
+                    } catch (Exception e) {
+
+                    }
+
+
+                    //to cell
+                    try {
+                        for (Junction outgoingJunctionFromTarget : this.area.getOutgoingJunctionsForCell(rowJunction.getTo())) {
+                            int incomingIndex = area.getListIndexForJunction(outgoingJunctionFromTarget);
+                            this.workingMatrix[rowIndex][incomingIndex]++;
+                        }
+                    } catch (Exception e) {
+
+                    }
+                    try {
+                        for (Junction incomingJunctionFromTarget : this.area.getIncomingJunctionsForCell(rowJunction.getTo())) {
+                            int incomingIndex = area.getListIndexForJunction(incomingJunctionFromTarget);
+                            this.workingMatrix[rowIndex][incomingIndex]--;
+                        }
+                    } catch (Exception e) {
+
+                    }
+
                 }
 
+            }
 
+    }
+
+    public static double getLcmDouble(double num1, double num2){
+
+        if (num1 == 0 || num2 == 0){
+            return 0;
+        }
+
+        //calc
+        double calc1;
+        double calc2;
+        if (Math.abs(num1) > Math.abs(num2)){
+            calc1= Math.abs(num1);
+            calc2 = Math.abs(num2);
+        } else {
+            calc2= Math.abs(num1);
+            calc1 = Math.abs(num2);
+        }
+
+        //calc1 > calc 2
+        //einser abfangen
+        if (calc1==1){
+            return calc2;
+        } if (calc2 ==1){
+            return calc1;
+        }
+
+        //check if they can be divided by each other
+        if (calc1 % calc2 == 0){
+            calc1= calc2;
+        } else {
+
+
+        }
+
+        int steps =0;
+        while (calc1 != calc2) {
+
+            if (calc1< calc2){
+                calc2 -= calc1;
             } else {
-                //from cell
-                for (Junction outgoingJunction : this.area.getOutgoingJunctionsForCell(centerCoordinates)) {
-                    if (outgoingJunction.equals(rowJunction)) {
-                        this.workingMatrix[rowIndex][rowIndex] = -1;
+                calc1 -= calc2;
+            }
 
+            steps++;
+            if (steps > 1000){
 
-                    } else {
+                if (Math.abs(num1) > Math.abs(num2)){
+                    calc1= Math.abs(num1);
+                    calc2 = Math.abs(num2);
+                } else {
+                    calc2= Math.abs(num1);
+                    calc1 = Math.abs(num2);
+                }
+                if(calc1 % 2 == 0 && calc2 % 2 == 0) {
+                    int ggt = 2;
+                    while (calc1 % 2 == 0 && calc2 % 2 == 0) {
 
-                        this.workingMatrix[rowIndex][area.getListIndexForJunction(outgoingJunction)] = -1;
+                        calc1 /= 2;
+                        calc2 /= 2;
+                        ggt *= 2;
 
                     }
+                    calc1=ggt;
+                    calc2 = ggt;
+                } else {
+                    calc1 = 1;
+                    calc2=1;
                 }
-
-                //to cell
-                for (Junction outgoingJunctionFromTarget : this.area.getOutgoingJunctionsForCell(rowJunction.getTo())) {
-
-                    this.workingMatrix[rowIndex][area.getListIndexForJunction(outgoingJunctionFromTarget)] = 1;
-
-                    //this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "junction from " + outgoingJunctionFromTarget.getFrom().toString() + " to " + outgoingJunctionFromTarget.getTo().toString() +  " with index " + rowIndex + " and " + area.getListIndexForJunction(outgoingJunctionFromTarget) + " set to +1");
-                }
-
             }
         }
-        }
+
+
+        double product = num1 * num2;
+        return Math.abs(num1*num2/calc1);
+    }
 
 
         public static long getLcm(long num1, long num2){
@@ -279,7 +393,7 @@ public class SystemOfEquations implements Serializable {
         return result;
     }
 
-    private double[] getMatrixRow(double[][] matrix, int row, long factor){
+    private double[] getMatrixRow(double[][] matrix, int row, double factor){
         double[] result = matrix[row];
         for (int i =0; i<this.dimension; i++){
             result[i] = result[i]*factor;
@@ -293,12 +407,24 @@ public class SystemOfEquations implements Serializable {
 
             for (int rowIndex = diagonalIndex+1; rowIndex < this.dimension; rowIndex++) {
                 if (workingMatrix[rowIndex][diagonalIndex] != 0 && workingMatrix[diagonalIndex][diagonalIndex] != 0) {
-                    long lcm = this.getLcm(workingMatrix[rowIndex][diagonalIndex],workingMatrix[diagonalIndex][diagonalIndex]);
-                    long diagonalFactor = lcm /workingMatrix[diagonalIndex][diagonalIndex];
-                    long workingFactor = -lcm/workingMatrix[rowIndex][diagonalIndex];
-                    long[] diagonalRow = this.getMatrixRow(workingMatrix, diagonalIndex, diagonalFactor);
-                    long[] workingRow = this.getMatrixRow(workingMatrix, rowIndex, workingFactor);
+                    double lcm = getLcmDouble(workingMatrix[rowIndex][diagonalIndex], workingMatrix[diagonalIndex][diagonalIndex]);
+                    if (lcm > 1000) {
+                        this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "lcm for " + diagonalIndex + " and " + rowIndex + " = " + lcm + " which is way too big\n It was calculated for "+workingMatrix[rowIndex][diagonalIndex] + " and " + workingMatrix[diagonalIndex][diagonalIndex]);
+                    } else{
+                        this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "lcm for index " + diagonalIndex +   " with value "+workingMatrix[diagonalIndex][diagonalIndex] + " and index " + rowIndex + " and value "+workingMatrix[rowIndex][diagonalIndex] + " is " + lcm);
+                }
+                    double diagonalFactor = lcm /workingMatrix[diagonalIndex][diagonalIndex];
+                    double workingFactor = -lcm/workingMatrix[rowIndex][diagonalIndex];
+                    /*
+                    if (Math.signum(workingMatrix[diagonalIndex][diagonalIndex]) == Math.signum(workingMatrix[rowIndex][diagonalIndex] )){
+
+                        workingFactor*= -1;
+                    }
+                    */
+                    double[] diagonalRow = this.getMatrixRow(workingMatrix, diagonalIndex, diagonalFactor);
+                    double[] workingRow = this.getMatrixRow(workingMatrix, rowIndex, workingFactor);
                     //this.multiplyEachEntryOfRowFromGaussOperators(rowIndex, workingFactor);
+
 
                     this.gaussOperators[rowIndex] = this.getMatrixRow(this.gaussOperators, rowIndex,workingFactor);
                     this.gaussOperators[rowIndex] = this.addRows(this.gaussOperators[rowIndex],this.getMatrixRow(this.gaussOperators, diagonalIndex,diagonalFactor));
@@ -343,6 +469,9 @@ public class SystemOfEquations implements Serializable {
             this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "working factor was not calculated correctly!!!");
             return;
         }
+        if (workingFactor != 1) {
+            this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "Row " + rowIndex + " divided by " + workingFactor);
+        }
         for (int col =0; col < this.dimension; col ++){
             if (this.gaussOperators[rowIndex][col] != 0) {
 
@@ -358,11 +487,11 @@ public class SystemOfEquations implements Serializable {
 
             for (int rowIndex = diagonalIndex-1; rowIndex  >= 0; rowIndex--) {
                 if (workingMatrix[rowIndex][diagonalIndex] != 0) {
-                    long lcm = this.getLcm(workingMatrix[rowIndex][diagonalIndex],workingMatrix[diagonalIndex][diagonalIndex]);
-                    long diagonalFactor = lcm /workingMatrix[diagonalIndex][diagonalIndex];
-                    long workingFactor = -lcm/workingMatrix[rowIndex][diagonalIndex];
-                    long[] diagonalRow = this.getMatrixRow(workingMatrix, diagonalIndex, diagonalFactor);
-                    long[] workingRow = this.getMatrixRow(workingMatrix, rowIndex, workingFactor);
+                    double lcm = this.getLcmDouble(workingMatrix[rowIndex][diagonalIndex],workingMatrix[diagonalIndex][diagonalIndex]);
+                    double diagonalFactor = lcm /workingMatrix[diagonalIndex][diagonalIndex];
+                    double workingFactor = -lcm/workingMatrix[rowIndex][diagonalIndex];
+                    double[] diagonalRow = this.getMatrixRow(workingMatrix, diagonalIndex, diagonalFactor);
+                    double[] workingRow = this.getMatrixRow(workingMatrix, rowIndex, workingFactor);
                     this.gaussOperators[rowIndex] = this.getMatrixRow(this.gaussOperators, rowIndex,workingFactor);
                     this.gaussOperators[rowIndex] = this.addRows(this.gaussOperators[rowIndex],this.getMatrixRow(this.gaussOperators, diagonalIndex,diagonalFactor));
                     //this.gaussOperators[rowIndex][diagonalIndex] += diagonalFactor;
@@ -408,6 +537,23 @@ public class SystemOfEquations implements Serializable {
         }
         */
         int multiplyer = 1;
+        while (this.rowDividibleBy(workingRow, 11)){
+            for (int i=0; i< workingRow.length; i++){
+                if (workingRow[i] != 0){
+                    workingRow[i]/=11;
+                }
+            }
+            multiplyer*=11;
+        }
+
+        while (this.rowDividibleBy(workingRow, 7)){
+            for (int i=0; i< workingRow.length; i++){
+                if (workingRow[i] != 0){
+                    workingRow[i]/=7;
+                }
+            }
+            multiplyer*=7;
+        }
         while (this.rowDividibleBy(workingRow, 5)){
             for (int i=0; i< workingRow.length; i++){
                 if (workingRow[i] != 0){
@@ -437,7 +583,66 @@ public class SystemOfEquations implements Serializable {
 
     }
 
+
+    private double[] simplifyRow(double[] workingRow, int rowIndex) {
+
+        List<Integer> primfactors = this.getPossibleFactorsOfRow(workingRow);
+        int multiplyer = 1;
+        for (Integer primeFactor: primfactors){
+            while (this.rowDividibleBy(workingRow, primeFactor)){
+                for (int i=0; i< workingRow.length; i++){
+                    if (workingRow[i] != 0){
+                        workingRow[i]/=primeFactor;
+                    }
+                }
+                multiplyer*=primeFactor;
+            }
+        }
+
+
+        this.divideEachEntryOfRowFromGaussOperators(rowIndex, multiplyer);
+        return workingRow;
+
+    }
+
+    private List<Integer> getPossibleFactorsOfRow(double[] workingRow) {
+        //double smallestValue = this.getSmallestValueOfRow(workingRow);
+        List<Integer> primeNumberList= new ArrayList<>();
+        primeNumberList.add(2);
+        primeNumberList.add(3);
+        primeNumberList.add(5);
+        primeNumberList.add(7);
+        primeNumberList.add(11);
+        primeNumberList.add(13);
+        primeNumberList.add(17);
+        primeNumberList.add(19);
+        primeNumberList.add(23);
+
+        return primeNumberList;
+
+
+    }
+
+    private double getSmallestValueOfRow(double[] workingRow) {
+        double smallestValue = 999999999;
+        for (double eachValue : workingRow){
+            if (smallestValue > eachValue){
+                smallestValue = eachValue;
+            }
+        }
+        return smallestValue;
+    }
+
     private boolean rowDividibleBy(long[] workingRow, int divisor) {
+        for (int i=0; i< workingRow.length; i++){
+            if (workingRow[i] != 0 && Math.abs(workingRow[i])%divisor !=0){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean rowDividibleBy(double[] workingRow, int divisor) {
         for (int i=0; i< workingRow.length; i++){
             if (workingRow[i] != 0 && Math.abs(workingRow[i])%divisor !=0){
                 return false;
@@ -563,15 +768,19 @@ public class SystemOfEquations implements Serializable {
 
 
     public void calcResultFor(Coordinates eachCoord) {
-        for (Junction eachJunction: this.area.getOutgoingJunctionsForCell(eachCoord)){
+        try {
+            for (Junction eachJunction: this.area.getOutgoingJunctionsForCell(eachCoord)){
 
-            int row = this.area.getListIndexForJunction(eachJunction);
-                for (int col =0; col < dimension; col ++){
-                    this.resultVector[row]+= gaussOperators[row][col] * this.boundaryVector[col];
+                int row = this.area.getListIndexForJunction(eachJunction);
+                    for (int col =0; col < dimension; col ++){
+                        this.resultVector[row]+= gaussOperators[row][col] * this.boundaryVector[col];
 
+                    }
                 }
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
 
     public void resetResultVector() {
         for (int i=0; i< dimension; i++){

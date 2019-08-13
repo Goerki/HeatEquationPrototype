@@ -25,6 +25,7 @@ public class CellArea implements Serializable {
     private boolean isIsobar;
     private HeatequationLogger logger;
     private Map<Coordinates, List<Junction>> validJunctionMap;
+    private Map<Coordinates, List<Junction>> incomingJunctionMap;
     private int numberJunctions;
     private int numberVirtualJunctions;
     private Map<Junction, Integer> systemOfEquationsMapping;
@@ -130,16 +131,38 @@ public class CellArea implements Serializable {
             return;
         }
         this.validJunctionMap = new HashMap<>();
+        this.incomingJunctionMap = new HashMap<>();
         this.numberJunctions = 0;
         this.numberVirtualJunctions =0;
         for (Coordinates eachCoord: this.coords){
+            this.incomingJunctionMap.put(eachCoord, null);
 
             this.validJunctionMap.put(eachCoord, this.getAllValidJunctions(eachCoord, space));
             this.numberJunctions += this.getAllValidJunctions(eachCoord, space).size();
             this.numberVirtualJunctions += space.allCells.getCell(eachCoord).getAsFluidCell().getNumberOfVirtualBorders();
         }
 
+        for (Coordinates eachCoord: this.coords){
+            for (Junction eachJunction: this.validJunctionMap.get(eachCoord)) {
 
+
+                this.addJunctionToIncomingJunctionMap(eachJunction);
+
+            }
+        }
+
+
+    }
+
+    private void addJunctionToIncomingJunctionMap(Junction eachJunction) {
+        List<Junction> newList;
+        if(this.incomingJunctionMap.get(eachJunction.getTo()) == null){
+            newList = new ArrayList<>();
+        } else {
+            newList = this.incomingJunctionMap.get(eachJunction.getTo());
+        }
+        newList.add(eachJunction);
+        this.incomingJunctionMap.put(eachJunction.getTo(), newList);
     }
 
     private List<Junction> getAllValidJunctions(Coordinates centerCoord, Space space) {
@@ -321,8 +344,20 @@ public class CellArea implements Serializable {
     }
 
 
-    public List<Junction> getOutgoingJunctionsForCell(Coordinates centerCell){
+    public List<Junction> getOutgoingJunctionsForCell(Coordinates centerCell) throws Exception{
+        if (this.validJunctionMap.get(centerCell)==null){
+            throw new Exception("no outgoing junction found for cell " + centerCell);
+
+        }
         return this.validJunctionMap.get(centerCell);
+    }
+
+    public List<Junction> getIncomingJunctionsForCell(Coordinates centerCell) throws Exception{
+        if (this.incomingJunctionMap.get(centerCell)==null){
+            throw new Exception("no incoming junction found for cell " + centerCell);
+
+        }
+        return this.incomingJunctionMap.get(centerCell);
     }
 
 
