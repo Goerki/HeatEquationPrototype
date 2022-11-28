@@ -13,7 +13,6 @@ public class FluidCell extends Cell implements Serializable {
     private double lastNumberParticles;
     private VirtualFluidCell borderCell;
     private Map<Coordinates.direction, Double> particleFLow;
-    private Map<Coordinates.direction, Double> inertiaParticleFlow;
     private BigDecimal pressure;
 
 
@@ -21,16 +20,7 @@ public class FluidCell extends Cell implements Serializable {
         return particleFLow;
     }
 
-    public Map<Coordinates.direction, Double> getInertiaParticleFlow(){
-        return inertiaParticleFlow;
-    }
 
-    public void calculateInertiaParticleFlow() {
-
-        this.calculateInertiaParticleFlowInDirection(Coordinates.direction.XPLUS1);
-        this.calculateInertiaParticleFlowInDirection(Coordinates.direction.YPLUS1);
-        this.calculateInertiaParticleFlowInDirection(Coordinates.direction.ZPLUS1);
-    }
 
     public List<Coordinates.direction> getBordercellDirections(){
         List<Coordinates.direction> result = new ArrayList<>();
@@ -40,25 +30,6 @@ public class FluidCell extends Cell implements Serializable {
         return this.borderCell.getDirections();
     }
 
-    private void calculateInertiaParticleFlowInDirection(Coordinates.direction positiveDirection) {
-        double particleFlowInPositiveDirection = this.particleFLow.get(positiveDirection) +this.particleFLow.get(this.getOppositeDirection(positiveDirection));
-        if (particleFlowInPositiveDirection == 0){
-            return;
-        }
-
-
-        particleFlowInPositiveDirection *= -0.8;
-        Coordinates.direction targetDirection = this.getOppositeDirectionForParticleFlow(positiveDirection);
-        if(this.directionExists(targetDirection)){
-
-            this.addInertiaParticleFlow(particleFlowInPositiveDirection*0.8, targetDirection);
-            particleFlowInPositiveDirection *= 0.2;
-        }
-        List<Coordinates.direction> directionList =  this.neighborCellsOrthogonalTo(positiveDirection);
-        for (Coordinates.direction direction: directionList){
-            this.addInertiaParticleFlow(particleFlowInPositiveDirection/directionList.size(), direction);
-        }
-    }
 
     private List<Coordinates.direction> neighborCellsOrthogonalTo(Coordinates.direction positiveDirection) {
         List<Coordinates.direction> result = new ArrayList<>();
@@ -113,11 +84,6 @@ public class FluidCell extends Cell implements Serializable {
         return null;
     }
 
-    private void addInertiaParticleFlow(double particleFlow, Coordinates.direction direction) {
-        Double newValue =  this.inertiaParticleFlow.get(direction)+particleFlow;
-        this.inertiaParticleFlow.remove(direction);
-        this.inertiaParticleFlow.put(direction, newValue);
-    }
 
     private boolean directionExists(Coordinates.direction oppositeDirection) {
         return this.neighborDirections.contains(oppositeDirection);
@@ -150,24 +116,17 @@ public class FluidCell extends Cell implements Serializable {
         return null;
     }
 
-    private Coordinates.direction getOppositeDirection(Coordinates.direction direction){
-        switch (direction){
-            case XPLUS1: return Coordinates.direction.XMINUS1;
-            case XMINUS1: return Coordinates.direction.XPLUS1;
-            case YPLUS1: return Coordinates.direction.YMINUS1;
-            case YMINUS1: return Coordinates.direction.YPLUS1;
-            case ZPLUS1: return Coordinates.direction.ZMINUS1;
-            case ZMINUS1: return Coordinates.direction.ZPLUS1;
-        }
-        return null;
-    }
 
     public double getNumberParticlesOfSingleVirtualCell() {
         return this.numberParticles;
     }
 
     public void calcDiffussionFromBorderCell(double calcDiffusionForVirtualBorderCell) {
-        this.addToNumberParticlesAndInnerEnergy(calcDiffusionForVirtualBorderCell * borderCell.getNumberBorders(), borderCell.getTemperature());
+        for (Coordinates.direction direction: this.borderCell.getDirections()){
+            this.addToNumberParticlesAndInnerEnergy(calcDiffusionForVirtualBorderCell, borderCell.getTemperature());
+            //this.addToParticleFlow(calcDiffusionForVirtualBorderCell, direction);
+        }
+
     }
 
     public boolean hasBorderCellOnBottom() {
@@ -180,13 +139,6 @@ public class FluidCell extends Cell implements Serializable {
         }
     }
 
-    public void particleFlowFromEachBorderCell(double amount) {
-
-        for(Coordinates.direction direction: this.borderCell.getDirections()){
-            this.addToNumberParticlesAndTemperature(amount, this.borderCell.getTemperature(), direction);
-
-        }
-    }
 
     public double getParticleFlowSum() {
         double result = 0;
@@ -198,6 +150,10 @@ public class FluidCell extends Cell implements Serializable {
 
 
     private List<Coordinates.direction> neighborDirections;
+
+    public List<Coordinates.direction> getNeighborDirections(){
+        return this.neighborDirections;
+    }
 
 
 
@@ -213,9 +169,7 @@ public class FluidCell extends Cell implements Serializable {
         super.isForSolidCalculation = false;
 
         particleFLow = new HashMap<>();
-        inertiaParticleFlow = new HashMap<>();
         this.resetParticleFlow();
-        this.resetInertiaParticleFlow();
         this.neighborDirections = new ArrayList<>();
         }
 
@@ -266,8 +220,8 @@ public class FluidCell extends Cell implements Serializable {
 
         public void calcDiffussionToBorderCell(double amount){
         if (this.isBorderCell()) {
-            for (Coordinates.direction source: this.getBordercellDirections()){
-                this.addToNumberParticlesAndInnerEnergy(-amount, this.oldValue, source);
+            for (Coordinates.direction destination: this.getBordercellDirections()){
+                this.addToNumberParticlesAndInnerEnergy(-amount, this.oldValue, destination);
             }
 
 
@@ -278,9 +232,6 @@ public class FluidCell extends Cell implements Serializable {
         }
     }
 
-    public void setBorderCellOnTop(){
-        this.borderCell.setOnTop(true);
-    }
 
     public boolean hasBorderCellOnTop(){
         if (this.isBorderCell()) {
@@ -349,10 +300,9 @@ public class FluidCell extends Cell implements Serializable {
 
     }
 
-    private void addToParticleFlow(double numberParticles, Coordinates.direction source){
-        Double newValue =  this.particleFLow.get(source)+numberParticles;
-        this.particleFLow.remove(source);
-        this.particleFLow.put(source, newValue);
+    private void addToParticleFlow(double numberParticles, Coordinates.direction destination){
+        Double newValue =  this.particleFLow.get(destination)+Math.abs(numberParticles);
+        this.particleFLow.put(destination, newValue);
     }
 
     public double getParticleFlowFromSource( Coordinates.direction source){
@@ -369,15 +319,6 @@ public class FluidCell extends Cell implements Serializable {
 
     }
 
-    public void resetInertiaParticleFlow(){
-        this.inertiaParticleFlow.put(Coordinates.direction.XPLUS1, 0.0);
-        this.inertiaParticleFlow.put(Coordinates.direction.XMINUS1, 0.0);
-        this.inertiaParticleFlow.put(Coordinates.direction.YPLUS1, 0.0);
-        this.inertiaParticleFlow.put(Coordinates.direction.YMINUS1, 0.0);
-        this.inertiaParticleFlow.put(Coordinates.direction.ZPLUS1, 0.0);
-        this.inertiaParticleFlow.put(Coordinates.direction.ZMINUS1, 0.0);
-    }
-
 
 
     public void addToNumberParticlesForTemperatureCalculationDuringNormalization(double particles, double temperatureParticles) {
@@ -391,6 +332,13 @@ public class FluidCell extends Cell implements Serializable {
         */
         this.value += particles * temperatureParticles;
         this.numberParticles += particles;
+
+    }
+
+    public void addToNumberParticlesForTemperatureCalculationDuringNormalization(double particles, double temperatureParticles, Coordinates.direction destination) {
+        this.value += particles * temperatureParticles;
+        this.numberParticles += particles;
+        this.addToParticleFlow(particles, destination);
 
     }
 
@@ -444,16 +392,16 @@ public class FluidCell extends Cell implements Serializable {
      * adds the number of particles to the number of particles and adds the energy of the particle flow to the inner energy in the value property (you need to normilize them afterwards)
      * @param particles the number of particles that will be added as flow
      * @param temperatureParticles the temperature of the paricles
-     * @param source the source, where the particles are coming from
+     * @param destination the source, where the particles are going to
      */
-    public void addToNumberParticlesAndInnerEnergy(double particles, double temperatureParticles, Coordinates.direction source) {
+    public void addToNumberParticlesAndInnerEnergy(double particles, double temperatureParticles, Coordinates.direction destination) {
         if (particles > 0) {
             this.value +=  particles * temperatureParticles;
         } else {
             this.value += particles*this.oldValue;
         }
         this.numberParticles += particles;
-        this.addToParticleFlow(particles, source);
+        this.addToParticleFlow(particles, destination);
     }
 
 
@@ -461,9 +409,9 @@ public class FluidCell extends Cell implements Serializable {
      * adds the number of particles to the number of particles and calculates the new temerature as the average value of the ld and the new particles temperatures
      * @param particles the number of particles that will be added as flow
      * @param temperatureParticles the temperature of the paricles
-     * @param source the source, where the particles are coming from
+     * @param destination the source, where the particles are coming from
      */
-    public void addToNumberParticlesAndTemperature(double particles, double temperatureParticles, Coordinates.direction source) {
+    public void addToNumberParticlesAndTemperature(double particles, double temperatureParticles, Coordinates.direction destination) {
         this.value *= this.numberParticles;
         if (particles > 0) {
             this.value +=  particles * temperatureParticles;
@@ -472,7 +420,7 @@ public class FluidCell extends Cell implements Serializable {
         }
         this.numberParticles += particles;
         this.value /= this.numberParticles;
-        this.addToParticleFlow(particles, source);
+        this.addToParticleFlow(particles, destination);
     }
 
 
@@ -509,4 +457,6 @@ public class FluidCell extends Cell implements Serializable {
     public VirtualFluidCell getVirtualBorderCell() {
         return this.borderCell;
     }
+
+
 }

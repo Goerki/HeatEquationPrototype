@@ -417,9 +417,6 @@ public class Cells implements Serializable {
 
                 this.getCell(coord).getAsFluidCell().setBorderCell(border, temp, gasConstant, borderDirections);
 
-                if (coord.y == 0 || coord.y == sizeY - 1) {
-                    this.getCell(coord).getAsFluidCell().setBorderCellOnTop();
-                }
             }
         }
 

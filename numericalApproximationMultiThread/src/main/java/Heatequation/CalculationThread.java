@@ -107,7 +107,6 @@ public class CalculationThread extends Thread implements Serializable {
 
             for (Coordinates fluidCell: this.fluidCells){
                 space.allCells.getCell(fluidCell).getAsFluidCell().normalizeNumberParticlesAndTemperature();
-                space.allCells.getCell(fluidCell).getAsFluidCell().resetInertiaParticleFlow();
             }
 
         }
@@ -254,15 +253,19 @@ public class CalculationThread extends Thread implements Serializable {
                             particleFlow/= space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getTemperatureOfBorderCell();
                         }
                         for (Coordinates.direction eachVirtualBorderDirection: space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getBordercellDirections()){
-                            space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getLastValue());
+                            space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell().getLastValue(), eachVirtualBorderDirection);
                         }
                     } else {
+                        Coordinates.direction destination;
                         if (systemOfEquations.getResultForJunction(eachJunction) > 0) {
                             targetCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
                             sourceCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
+                            destination = eachJunction.getDirection();
+
                         } else {
                             targetCell = this.space.allCells.getCell(eachJunction.getFrom()).getAsFluidCell();
                             sourceCell = this.space.allCells.getCell(eachJunction.getTo()).getAsFluidCell();
+                            destination = Coordinates.getOppositeParticleFlowDirection(eachJunction.getDirection());
                         }
 
                         double result = systemOfEquations.getAbsoluteResultForJunction(eachJunction);
@@ -270,7 +273,7 @@ public class CalculationThread extends Thread implements Serializable {
 
 
                         targetCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(particleFlow, sourceCell.getLastValue());
-                        sourceCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-particleFlow, sourceCell.getLastValue());
+                        sourceCell.addToNumberParticlesForTemperatureCalculationDuringNormalization(-particleFlow, sourceCell.getLastValue(),destination );
                     }
                     } catch (Exception e) {
                         e.printStackTrace();

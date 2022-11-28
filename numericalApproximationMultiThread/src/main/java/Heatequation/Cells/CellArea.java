@@ -423,36 +423,6 @@ public class CellArea implements Serializable {
 
     }
 
-    public void applyParticleFlowFromBorderCells(Space space){
-        this.calcDivergenceFromPressure(space);
-
-        double[] temperatureDifferenceArray = new double[this.getNumberVirtualCells()];
-        double temperatureDifferenceSum = 0;
-        for(int i=0; i<this.getNumberVirtualCells(); i++){
-            temperatureDifferenceArray[i] = (space.allCells.getCell(this.getborderCellsWithVirtualCells().get(i)).getValue() -  space.allCells.getCell(this.getborderCellsWithVirtualCells().get(i)).getAsFluidCell().getTemperatureOfBorderCell())* space.allCells.getCell(this.getborderCellsWithVirtualCells().get(i)).getAsFluidCell().getNumberOfVirtualBorders();
-            temperatureDifferenceSum +=temperatureDifferenceArray[i];
-        }
-
-        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "energy difference calculated to " + this.pressureDivergence);
-
-        double probe = 0;
-        double[] einzelnerWert = new double[this.getNumberVirtualCells()];
-
-        if (temperatureDifferenceSum!=0) {
-            for (int i = 0; i < this.getNumberVirtualCells(); i++) {
-                einzelnerWert[i] = temperatureDifferenceArray[i] / temperatureDifferenceSum;
-                einzelnerWert[i] = einzelnerWert[i] * this.pressureDivergence / space.allCells.getCell(this.getborderCellsWithVirtualCells().get(i)).getAsFluidCell().getTemperatureOfBorderCell();
-                //for testing reasons only
-                //einzelnerWert[i] = 1.0/(double)this.getNumberVirtualCells();
-                space.particleFlowFromVirtualCell(this.getborderCellsWithVirtualCells().get(i), einzelnerWert[i]);
-                probe += einzelnerWert[i];
-            }
-        }
-        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "Probe calculated to " + probe);
-
-        probe *= 300;
-        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "energy adds to " + probe);
-    }
 
     private void calcDivergenceFromPressure(Space space) {
         this.pressureDivergence = 0;

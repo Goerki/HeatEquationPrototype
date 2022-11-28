@@ -14,7 +14,7 @@ public class NewCalculationConfigurationWindow extends JDialog {
     public Space space;
 
     public NewCalculationConfigurationWindow(Space space) {
-        setContentPane(contentPane);
+    setContentPane(contentPane);
         setModal(true);
         getRootPane().setDefaultButton(buttonOK);
         this.space = space;
@@ -51,7 +51,12 @@ public class NewCalculationConfigurationWindow extends JDialog {
         if (!this.validInput()) {
             openError("No valid input. Please enter numbers in the correct format");
         } else {
-            this.space.initialize(Double.parseDouble(this.timeField.getText()), Double.parseDouble(this.deltaTField.getText()),Integer.parseInt(this.numberThreadsField.getText()));
+            try {
+                this.space.initialize(Double.parseDouble(this.timeField.getText()), Double.parseDouble(this.deltaTField.getText()),Integer.parseInt(this.numberThreadsField.getText()));
+            } catch (Exception e) {
+                e.printStackTrace();
+                //TODO: Something on failure
+            }
             this.dispose();
         }
     }

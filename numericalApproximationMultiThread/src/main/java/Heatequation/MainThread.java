@@ -171,6 +171,10 @@ public class MainThread extends CalculationThread  {
         for (int counter = 0; counter< this.numberSteps; counter++) {
             Coordinates logCoords = new Coordinates(2,4,2);
 
+            if (counter >= 1000){
+                space.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "1000 steps reached");
+
+            }
 
             this.space.logFluidCell("beginning        ", logCoords);
             //solid calculation , status 1
@@ -189,6 +193,7 @@ public class MainThread extends CalculationThread  {
             this.overwriteOldSolidValues();
             waitSolidValuesOverwritten();
             this.space.logFluidCell("solidOverwritten ", logCoords);
+            this.resetAllParticleFlows();
 
 
             this.runAllThreads();
@@ -227,7 +232,7 @@ public class MainThread extends CalculationThread  {
             //for debugging purposes only
             //this.calcPressureForEachArea();
 
-            this.resetAllParticleFlows();
+
 
 
             //calculate Inertia Particle Flow status 5
@@ -371,14 +376,6 @@ public class MainThread extends CalculationThread  {
     }
 
 
-    public void applyParticleFlowFromBorderCellsToAllAreas(){
-        for (CellArea area: this.areas){
-            if(area.isFluid() && area.isIsobar()){
-                area.applyParticleFlowFromBorderCells(this.space);
-            }
-        }
-    }
-
 
 
 
@@ -440,8 +437,8 @@ public class MainThread extends CalculationThread  {
 
         }
         //DEBUG
-        this.space.allCells.calcAverages();
-        this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "global number of particles: " +this.space.allCells.getNumberParticles() );
+        //this.space.allCells.calcAverages();
+        //this.space.logger.logMessage(HeatequationLogger.LogLevel.INFO, "global number of particles: " +this.space.allCells.getNumberParticles() );
 
         if (stepNumber >= this.nextStepOfSnapshot){
             this.space.saveSnapshotInHistroy();

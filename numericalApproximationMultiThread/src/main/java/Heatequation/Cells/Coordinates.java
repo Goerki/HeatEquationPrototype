@@ -8,6 +8,20 @@ public class Coordinates implements Serializable {
     public int x;
     public int y;
     public int z;
+
+    public Coordinates getCell(direction direction) {
+        switch (direction){
+            case XMINUS1: return this.getCellXMinus1();
+            case XPLUS1: return this.getCellXPlus1();
+            case YMINUS1: return this.getCellYMinus1();
+            case YPLUS1: return this.getCellYPlus1();
+            case ZMINUS1: return this.getCellZMinus1();
+            case ZPLUS1: return this.getCellZPlus1();
+
+        }
+        return null;
+    }
+
     public enum direction{
         XPLUS1,
         XMINUS1,
@@ -162,6 +176,24 @@ public class Coordinates implements Serializable {
         } else if (target.getCellZPlus1().equals(source)) {
             return Coordinates.direction.ZPLUS1;
         } else if (target.getCellZMinus1().equals(source)) {
+            return Coordinates.direction.ZMINUS1;
+        }
+        return null;
+
+    }
+
+    public static Coordinates.direction getDestinationForCoordinates(Coordinates source, Coordinates target) {
+        if (source.getCellYMinus1().equals(target)) {
+            return Coordinates.direction.YMINUS1;
+        } else if (source.getCellYPlus1().equals(target)) {
+            return Coordinates.direction.YPLUS1;
+        } else if (source.getCellXMinus1().equals(target)) {
+            return Coordinates.direction.XMINUS1;
+        } else if (source.getCellXPlus1().equals(target)) {
+            return Coordinates.direction.XPLUS1;
+        } else if (source.getCellZPlus1().equals(target)) {
+            return Coordinates.direction.ZPLUS1;
+        } else if (source.getCellZMinus1().equals(target)) {
             return Coordinates.direction.ZMINUS1;
         }
         return null;

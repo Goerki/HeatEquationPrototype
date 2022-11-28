@@ -11,7 +11,6 @@ import java.awt.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.List;
 
 public class SystemOfEquations implements Serializable {
@@ -20,7 +19,7 @@ public class SystemOfEquations implements Serializable {
     double[] boundaryVector;
     double[] resultVector;
     double[][] gaussOperators;
-    double[][] workingMatrix;
+    long[][] workingMatrix;
     CellArea area;
     Cells cells;
     int dimension;
@@ -38,12 +37,12 @@ public class SystemOfEquations implements Serializable {
 
 
 
-        double size = dimension*dimension*64.0/(1024.0*1024.0);
+        double size = dimension*dimension*8.0/(1024.0*1024.0);
         this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "dimension: " + dimension + " each matrix will take about " + size + " MB");
         this.boundaryVector = new double[dimension];
         this.resultVector =  new double[dimension];
         this.gaussOperators = new double[this.dimension][this.dimension];
-        this.workingMatrix = new double[this.dimension][this.dimension];
+        this.workingMatrix = new long[this.dimension][this.dimension];
         this.cells = cells;
         resetEquationsAndboundaries();
         //this.logCoords = new Coordinates(2,4,2);
@@ -57,22 +56,41 @@ public class SystemOfEquations implements Serializable {
             this.addToEquations(eachCoord);
 
         }
-        //System.out.println("init: " + this.drawTable(this.workingMatrix));
+        System.out.println("init: " + this.drawTable(this.workingMatrix));
         this.printVektorSumme();
+        //System.out.println(this.drawTable(workingMatrix));
         this.createTriangleMatrix();
-        //System.out.println("dreieck: " + this.drawTable(this.workingMatrix));
-        this.printVektorSumme();
-        this.createDiagonalMatrix();
-        //System.out.println("diagonal: " + this.drawTable(this.workingMatrix));
-        //System.out.print("matrix: " + this.workingMatrix.toString());
-        this.printVektorSumme();
-        this.normalizeSystem();
+        System.out.println("dreieck: " + this.drawTable(this.workingMatrix));
 
+        this.createDiagonalMatrix();
+        System.out.println("diagonal: " + this.drawTable(this.workingMatrix));
+        //System.out.print("matrix: " + this.workingMatrix.toString());
+
+        this.normalizeSystem();
+        System.out.println("normal: " + this.drawTable(this.workingMatrix));
+        System.out.println("gauss: " + this.drawTable(this.gaussOperators));
+        System.out.println("\nsummen:");
         this.printVektorSumme();
+        System.out.println("\n\n\nsummen Gausss:");
+        this.printVektorSummeGauss();
         this.isInitialized=true;
 
-        //System.out.println("Gauß matrix: " + this.drawTable(this.gaussOperators));
+        System.out.println("Gauß matrix: " + this.drawTable(this.gaussOperators));
 
+    }
+
+    private void printVektorSummeGauss() throws Exception {
+        for (int col=0; col < dimension; col ++){
+            double sum =0;
+            double absoluteSum=0;
+
+            for (int row=0; row < dimension; row ++){
+                absoluteSum += Math.abs(this.gaussOperators[row][col]);
+                sum += this.gaussOperators[row][col];
+            }
+            this.logger.logMessage(HeatequationLogger.LogLevel.ERROR ,"Summe für " + this.area.getJunctionsForListIndex(col) + " : " +sum + " absolute: " + absoluteSum);
+
+        }
     }
 
     private void printVektorSumme() throws Exception {
@@ -81,13 +99,14 @@ public class SystemOfEquations implements Serializable {
             double absoluteSum=0;
 
             for (int row=0; row < dimension; row ++){
-                absoluteSum += Math.abs(this.gaussOperators[row][col]);
-                sum = this.gaussOperators[row][col];
+                absoluteSum += Math.abs(this.workingMatrix[row][col]);
+                sum += this.workingMatrix[row][col];
             }
             this.logger.logMessage(HeatequationLogger.LogLevel.ERROR ,"Summe für " + this.area.getJunctionsForListIndex(col) + " : " +sum + " absolute: " + absoluteSum);
 
         }
     }
+
 
 
     private void resetEquationsAndboundaries(){
@@ -161,23 +180,30 @@ public class SystemOfEquations implements Serializable {
                     } catch (Exception e) {
                     }
 
+                    /*
                     try {
                         for (Junction incomingJunctionFromTarget : this.area.getIncomingJunctionsForCell(rowJunction.getTo())) {
                             this.workingMatrix[rowIndex][area.getListIndexForJunction(incomingJunctionFromTarget)]++;
                         }
                     } catch (Exception e) {
                     }
+                    */
 
                 } else {
                     //from cell
                     try {
                         for (Junction outgoingJunction : this.area.getOutgoingJunctionsForCell(rowJunction.getFrom())) {
-                            int incomingIndex = area.getListIndexForJunction(outgoingJunction);
-                            this.workingMatrix[rowIndex][incomingIndex]--;
+                            int outgoingIndex = area.getListIndexForJunction(outgoingJunction);
+                            this.workingMatrix[rowIndex][outgoingIndex]--;
+                            //if (outgoingIndex==rowIndex && this.area.getOutgoingJunctionsForCell(rowJunction.getTo()).size()!=0){
+                            if (outgoingIndex==rowIndex){
+                                this.workingMatrix[rowIndex][outgoingIndex]--;
+                            }
                         }
                     } catch (Exception e) {
 
                     }
+                    /*
                     try {
                         for (Junction incomingJunction : this.area.getIncomingJunctionsForCell(rowJunction.getFrom())) {
                             int incomingIndex = area.getListIndexForJunction(incomingJunction);
@@ -187,6 +213,7 @@ public class SystemOfEquations implements Serializable {
 
                     }
 
+*/
 
                     //to cell
                     try {
@@ -197,6 +224,7 @@ public class SystemOfEquations implements Serializable {
                     } catch (Exception e) {
 
                     }
+                    /*
                     try {
                         for (Junction incomingJunctionFromTarget : this.area.getIncomingJunctionsForCell(rowJunction.getTo())) {
                             int incomingIndex = area.getListIndexForJunction(incomingJunctionFromTarget);
@@ -205,86 +233,12 @@ public class SystemOfEquations implements Serializable {
                     } catch (Exception e) {
 
                     }
+                    */
 
                 }
 
             }
 
-    }
-
-    public static double getLcmDouble(double num1, double num2){
-
-        if (num1 == 0 || num2 == 0){
-            return 0;
-        }
-
-        //calc
-        double calc1;
-        double calc2;
-        if (Math.abs(num1) > Math.abs(num2)){
-            calc1= Math.abs(num1);
-            calc2 = Math.abs(num2);
-        } else {
-            calc2= Math.abs(num1);
-            calc1 = Math.abs(num2);
-        }
-
-        //calc1 > calc 2
-        //einser abfangen
-        if (calc1==1){
-            return calc2;
-        } if (calc2 ==1){
-            return calc1;
-        }
-
-        //check if they can be divided by each other
-        if (calc1 % calc2 == 0){
-            calc1= calc2;
-        } else {
-
-
-        }
-
-        int steps =0;
-        while (calc1 != calc2) {
-
-            if (calc1< calc2){
-                calc2 -= calc1;
-            } else {
-                calc1 -= calc2;
-            }
-
-            steps++;
-            if (steps > 1000){
-
-                if (Math.abs(num1) > Math.abs(num2)){
-                    calc1= Math.abs(num1);
-                    calc2 = Math.abs(num2);
-                } else {
-                    calc2= Math.abs(num1);
-                    calc1 = Math.abs(num2);
-                }
-                if(calc1 % 2 == 0 && calc2 % 2 == 0) {
-                    int ggt = 2;
-                    while (calc1 % 2 == 0 && calc2 % 2 == 0) {
-
-                        calc1 /= 2;
-                        calc2 /= 2;
-                        ggt *= 2;
-
-                    }
-                    calc1=ggt;
-                    calc2 = ggt;
-                } else {
-                    calc1 = 1;
-                    calc2=1;
-                }
-            }
-        }
-
-
-        double product = num1 * num2;
-        return Math.abs(num1*num2/calc1);
     }
 
 
@@ -393,7 +347,7 @@ public class SystemOfEquations implements Serializable {
         return result;
     }
 
-    private double[] getMatrixRow(double[][] matrix, int row, double factor){
+    private double[] getMatrixRow(double[][] matrix, int row, long factor){
         double[] result = matrix[row];
         for (int i =0; i<this.dimension; i++){
             result[i] = result[i]*factor;
@@ -407,23 +361,13 @@ public class SystemOfEquations implements Serializable {
 
             for (int rowIndex = diagonalIndex+1; rowIndex < this.dimension; rowIndex++) {
                 if (workingMatrix[rowIndex][diagonalIndex] != 0 && workingMatrix[diagonalIndex][diagonalIndex] != 0) {
-                    double lcm = getLcmDouble(workingMatrix[rowIndex][diagonalIndex], workingMatrix[diagonalIndex][diagonalIndex]);
-                    if (lcm > 1000) {
-                        this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "lcm for " + diagonalIndex + " and " + rowIndex + " = " + lcm + " which is way too big\n It was calculated for "+workingMatrix[rowIndex][diagonalIndex] + " and " + workingMatrix[diagonalIndex][diagonalIndex]);
-                    } else{
-                        this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "lcm for index " + diagonalIndex +   " with value "+workingMatrix[diagonalIndex][diagonalIndex] + " and index " + rowIndex + " and value "+workingMatrix[rowIndex][diagonalIndex] + " is " + lcm);
-                }
-                    double diagonalFactor = lcm /workingMatrix[diagonalIndex][diagonalIndex];
-                    double workingFactor = -lcm/workingMatrix[rowIndex][diagonalIndex];
-                    /*
-                    if (Math.signum(workingMatrix[diagonalIndex][diagonalIndex]) == Math.signum(workingMatrix[rowIndex][diagonalIndex] )){
+                    long lcm = this.getLcm(workingMatrix[rowIndex][diagonalIndex],workingMatrix[diagonalIndex][diagonalIndex]);
+                    long diagonalFactor = lcm /workingMatrix[diagonalIndex][diagonalIndex];
+                    long workingFactor = -lcm/workingMatrix[rowIndex][diagonalIndex];
 
-                        workingFactor*= -1;
-                    }
-                    */
-                    double[] diagonalRow = this.getMatrixRow(workingMatrix, diagonalIndex, diagonalFactor);
-                    double[] workingRow = this.getMatrixRow(workingMatrix, rowIndex, workingFactor);
-                    //this.multiplyEachEntryOfRowFromGaussOperators(rowIndex, workingFactor);
+                    long[] diagonalRow = this.getMatrixRow(workingMatrix, diagonalIndex, diagonalFactor);
+                    long[] workingRow = this.getMatrixRow(workingMatrix, rowIndex, workingFactor);
+
 
 
                     this.gaussOperators[rowIndex] = this.getMatrixRow(this.gaussOperators, rowIndex,workingFactor);
@@ -469,9 +413,6 @@ public class SystemOfEquations implements Serializable {
             this.logger.logMessage(HeatequationLogger.LogLevel.ERROR, "working factor was not calculated correctly!!!");
             return;
         }
-        if (workingFactor != 1) {
-            this.logger.logMessage(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS, "Row " + rowIndex + " divided by " + workingFactor);
-        }
         for (int col =0; col < this.dimension; col ++){
             if (this.gaussOperators[rowIndex][col] != 0) {
 
@@ -487,11 +428,11 @@ public class SystemOfEquations implements Serializable {
 
             for (int rowIndex = diagonalIndex-1; rowIndex  >= 0; rowIndex--) {
                 if (workingMatrix[rowIndex][diagonalIndex] != 0) {
-                    double lcm = this.getLcmDouble(workingMatrix[rowIndex][diagonalIndex],workingMatrix[diagonalIndex][diagonalIndex]);
-                    double diagonalFactor = lcm /workingMatrix[diagonalIndex][diagonalIndex];
-                    double workingFactor = -lcm/workingMatrix[rowIndex][diagonalIndex];
-                    double[] diagonalRow = this.getMatrixRow(workingMatrix, diagonalIndex, diagonalFactor);
-                    double[] workingRow = this.getMatrixRow(workingMatrix, rowIndex, workingFactor);
+                    long lcm = this.getLcm(workingMatrix[rowIndex][diagonalIndex],workingMatrix[diagonalIndex][diagonalIndex]);
+                    long diagonalFactor = lcm /workingMatrix[diagonalIndex][diagonalIndex];
+                    long workingFactor = -lcm/workingMatrix[rowIndex][diagonalIndex];
+                    long[] diagonalRow = this.getMatrixRow(workingMatrix, diagonalIndex, diagonalFactor);
+                    long[] workingRow = this.getMatrixRow(workingMatrix, rowIndex, workingFactor);
                     this.gaussOperators[rowIndex] = this.getMatrixRow(this.gaussOperators, rowIndex,workingFactor);
                     this.gaussOperators[rowIndex] = this.addRows(this.gaussOperators[rowIndex],this.getMatrixRow(this.gaussOperators, diagonalIndex,diagonalFactor));
                     //this.gaussOperators[rowIndex][diagonalIndex] += diagonalFactor;
@@ -537,23 +478,6 @@ public class SystemOfEquations implements Serializable {
         }
         */
         int multiplyer = 1;
-        while (this.rowDividibleBy(workingRow, 11)){
-            for (int i=0; i< workingRow.length; i++){
-                if (workingRow[i] != 0){
-                    workingRow[i]/=11;
-                }
-            }
-            multiplyer*=11;
-        }
-
-        while (this.rowDividibleBy(workingRow, 7)){
-            for (int i=0; i< workingRow.length; i++){
-                if (workingRow[i] != 0){
-                    workingRow[i]/=7;
-                }
-            }
-            multiplyer*=7;
-        }
         while (this.rowDividibleBy(workingRow, 5)){
             for (int i=0; i< workingRow.length; i++){
                 if (workingRow[i] != 0){
@@ -583,66 +507,7 @@ public class SystemOfEquations implements Serializable {
 
     }
 
-
-    private double[] simplifyRow(double[] workingRow, int rowIndex) {
-
-        List<Integer> primfactors = this.getPossibleFactorsOfRow(workingRow);
-        int multiplyer = 1;
-        for (Integer primeFactor: primfactors){
-            while (this.rowDividibleBy(workingRow, primeFactor)){
-                for (int i=0; i< workingRow.length; i++){
-                    if (workingRow[i] != 0){
-                        workingRow[i]/=primeFactor;
-                    }
-                }
-                multiplyer*=primeFactor;
-            }
-        }
-
-
-        this.divideEachEntryOfRowFromGaussOperators(rowIndex, multiplyer);
-        return workingRow;
-
-    }
-
-    private List<Integer> getPossibleFactorsOfRow(double[] workingRow) {
-        //double smallestValue = this.getSmallestValueOfRow(workingRow);
-        List<Integer> primeNumberList= new ArrayList<>();
-        primeNumberList.add(2);
-        primeNumberList.add(3);
-        primeNumberList.add(5);
-        primeNumberList.add(7);
-        primeNumberList.add(11);
-        primeNumberList.add(13);
-        primeNumberList.add(17);
-        primeNumberList.add(19);
-        primeNumberList.add(23);
-
-        return primeNumberList;
-
-
-    }
-
-    private double getSmallestValueOfRow(double[] workingRow) {
-        double smallestValue = 999999999;
-        for (double eachValue : workingRow){
-            if (smallestValue > eachValue){
-                smallestValue = eachValue;
-            }
-        }
-        return smallestValue;
-    }
-
     private boolean rowDividibleBy(long[] workingRow, int divisor) {
-        for (int i=0; i< workingRow.length; i++){
-            if (workingRow[i] != 0 && Math.abs(workingRow[i])%divisor !=0){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean rowDividibleBy(double[] workingRow, int divisor) {
         for (int i=0; i< workingRow.length; i++){
             if (workingRow[i] != 0 && Math.abs(workingRow[i])%divisor !=0){
                 return false;
@@ -725,10 +590,13 @@ public class SystemOfEquations implements Serializable {
     }
 
     private String drawTable(long[][] matrix) {
-        StringBuilder builder = new StringBuilder(this.dimension + " x " + this.dimension + " matrix: \n");
+        StringBuilder builder = new StringBuilder("\n" +this.dimension + " x " + this.dimension + " matrix: \n");
 
         for (int row = 0; row < this.dimension; row++) {
             for (int col = 0; col < this.dimension; col++) {
+                if (Math.signum(matrix[row][col]) !=-1){
+                    builder.append(" ");
+                }
                 builder.append(matrix[row][col] + " ");
 
             }

@@ -37,7 +37,7 @@ public class Space implements Serializable {
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
-        this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
         this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
         this.sizeX= sizeX;
         this.sizeY= sizeY;
@@ -46,7 +46,7 @@ public class Space implements Serializable {
         this.numberThreads=numberThreads;
         this.cellLength = 1;
         this.startingValue = startValue;
-        this.logCoords = new Coordinates(2,4,2);
+        this.logCoords = new Coordinates(2,2,4);
         this.initHistory(20);
     }
 
@@ -391,7 +391,6 @@ public class Space implements Serializable {
             if(coord.equals(this.logCoords)){
                 this.logFluidCell("after diffussion over borders", coord);
             }
-            this.calcConvectionFlowFromCellToBorderCell(coord, convection);
             if(coord.equals(this.logCoords)){
                 this.logFluidCell("after convection over borders", coord);
             }
@@ -426,34 +425,26 @@ public class Space implements Serializable {
     private void calcConvectionFlowFromCell(Coordinates coord, double convection) {
         if (allCells.cellExists(coord.getCellYPlus1()) && allCells.getCell(coord.getCellYPlus1()).isFluid()) {
             this.particleFlowFromTo(coord, coord.getCellYPlus1(), convection);
-            return;
         } else {
             int numberAdjacentCellsInThisLayer = 0;
-            List<Coordinates> neighborsInThisLayer = this.allCells.getAllAdjacentFluidCells(coord);
+            List<Coordinates.direction> allNeighborDirections = new ArrayList<>();
+            allNeighborDirections.addAll(this.allCells.getCell(coord).getAsFluidCell().getNeighborDirections());
+            allNeighborDirections.addAll(this.allCells.getCell(coord).getAsFluidCell().getBordercellDirections());
+            allNeighborDirections.remove(Coordinates.direction.YMINUS1);
 
-            if (allCells.cellExists(coord.getCellYMinus1()) && allCells.getCell(coord.getCellYMinus1()).isFluid()) {
-                int removeIndex = 0;
-                for (Coordinates anyCoord : neighborsInThisLayer) {
-                    if (anyCoord.equals(coord.getCellYMinus1())) {
-                        removeIndex = neighborsInThisLayer.indexOf(anyCoord);
-                        break;
-                    }
 
-                }
-                neighborsInThisLayer.remove(removeIndex);
-            }
 
-            numberAdjacentCellsInThisLayer = neighborsInThisLayer.size();
+
+
+            numberAdjacentCellsInThisLayer = allNeighborDirections.size();
             convection /= (double) numberAdjacentCellsInThisLayer;
-            for(Coordinates neighbor: neighborsInThisLayer){
-                this.particleFlowFromTo(coord, neighbor, convection);
+            for(Coordinates.direction direction: allNeighborDirections){
+                if (this.allCells.getCell(coord).getAsFluidCell().getBordercellDirections().contains(direction)){
+                    allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-convection, allCells.getCell(coord).getLastValue(), direction);
+                } else {
+                    this.particleFlowFromTo(coord, coord.getCell(direction), convection);
+                }
             }
-
-
-                /*
-
-
-*/
 
         }
     }
@@ -461,10 +452,10 @@ public class Space implements Serializable {
 
     private void calcConvectionFlowFromCellToBorderCell(Coordinates coord, double convection) {
         if (allCells.getCell(coord).getAsFluidCell().isBorderCell() && allCells.getCell(coord).getAsFluidCell().hasBorderCellOnTop()) {
-            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), Coordinates.direction.YMINUS1);
+            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), Coordinates.direction.YPLUS1);
             return;
         } else if (allCells.getCell(coord).getAsFluidCell().isBorderCell() && allCells.getCell(coord).getAsFluidCell().hasBorderCellOnBottom()) {
-            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), Coordinates.direction.XPLUS1);
+            allCells.getCell(coord).getAsFluidCell().addToNumberParticlesAndInnerEnergy(convection, allCells.getCell(coord).getAsFluidCell().getTemperatureOfBorderCell(), Coordinates.direction.YMINUS1);
             return;
         } else {
             /*
@@ -506,7 +497,8 @@ public class Space implements Serializable {
      * @return
      */
     private double calcDiffusionForCell(Coordinates cell){
-        double baseFactor = 0.075;
+        //DIFFUSION BASEFACTOR
+        double baseFactor = 0.1;
         baseFactor *=allCells.getCell(cell).getLastValue()*allCells.getCell(cell).getAlpha();
         this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "basefactor for temp and material" + cell.toString() + ": " + baseFactor);
         baseFactor *=deltaT;
@@ -534,21 +526,17 @@ public class Space implements Serializable {
     private void particleFlowFromTo(Coordinates source, Coordinates target, double amount){
 
 
-        Coordinates.direction direction = Coordinates.getSourceForCoordinates(source, target);
-        allCells.getCell(source).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-amount, allCells.getCell(target).getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
-        allCells.getCell(target).getAsFluidCell().addToNumberParticlesAndInnerEnergy(amount, allCells.getCell(source).getLastValue(), direction);
+        Coordinates.direction direction = Coordinates.getDestinationForCoordinates(source, target);
+        allCells.getCell(source).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-amount, allCells.getCell(target).getLastValue(), direction);
+        allCells.getCell(target).getAsFluidCell().addToNumberParticlesAndInnerEnergy(amount, allCells.getCell(source).getLastValue());
 
     }
 
-    public void particleFlowFromVirtualCell(Coordinates target, double amount){
-
-
-        allCells.getCell(target).getAsFluidCell().particleFlowFromEachBorderCell(amount);
-
-    }
 
      private double calcConvectionForCell(Coordinates coordinates){
-        double baseFactor = 5;
+
+        //CONVECTION BASE FACTOR
+        double baseFactor = 0.4;
         baseFactor *= (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()));
         baseFactor *= this.allCells.getCell(coordinates).getAlpha()*this.allCells.getCell(coordinates).getAsFluidCell().getLastNumberParticles()*deltaT;
 
@@ -807,33 +795,6 @@ public class Space implements Serializable {
 
 
 
-    public void calculateInertiaParticleFlowForCell(Coordinates centerCellCoordinates) {
-        if (centerCellCoordinates.equals(this.logCoords)){
-            //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "cell " + centerCellCoordinates.toString() + " : " + this.allCells.getCell(centerCellCoordinates).getAsFluidCell().toString());
-        }
-        this.allCells.getCell(centerCellCoordinates).getAsFluidCell().calculateInertiaParticleFlow();
-        if (logger.logLevelEnabled(HeatequationLogger.LogLevel.DEBUG)) {
-            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "particle flow for cell " + centerCellCoordinates.toString() + " : " + this.allCells.getCell(centerCellCoordinates).getAsFluidCell().getParticleFLow());
-            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "inertia particle flow calculated for cell " + centerCellCoordinates.toString() + " : " + this.allCells.getCell(centerCellCoordinates).getAsFluidCell().getInertiaParticleFlow());
-        }
-    }
-
-    public void applyInertiaParticleFlowForCell(Coordinates centerCell) {
-        if (centerCell.equals(this.logCoords) ){
-            //this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "cell " + centerCell.toString() + " : " + this.allCells.getCell(centerCell).getAsFluidCell().toString());
-        }
-        Map<Coordinates.direction, Double> particleFlowSourceDoubleMap = allCells.getCell(centerCell).getAsFluidCell().getInertiaParticleFlow();
-
-        for (Coordinates.direction direction: particleFlowSourceDoubleMap.keySet()){
-            if (particleFlowSourceDoubleMap.get(direction) != 0) {
-
-
-                allCells.getCell(centerCell).getAsFluidCell().addToNumberParticlesAndInnerEnergy(particleFlowSourceDoubleMap.get(direction), allCells.getCell(centerCell).getAsFluidCell().getLastValue());
-                //allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().addToNumberParticlesAndInnerEnergy(particleFlowSourceDoubleMap.get(direction), allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
-                allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().addToNumberParticlesAndInnerEnergy(-particleFlowSourceDoubleMap.get(direction), allCells.getCell(Coordinates.getCoordinatesForParticleFlowSource(centerCell, direction)).getAsFluidCell().getLastValue(), Coordinates.getOppositeParticleFlowDirection(direction));
-            }
-        }
-    }
 
     public Cell[][] getCellsForLayerAndTime(String axis, int layer, int time) {
         if (time == this.getNumberOfTimeSteps()){

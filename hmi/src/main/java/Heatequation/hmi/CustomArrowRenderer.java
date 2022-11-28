@@ -52,7 +52,7 @@ class CustomArrowRenderer implements TableCellRenderer {
                 ((JLabel) cellComponent).setIcon(new ImageIcon(this.icons.getImageForCell(this.cells[row][column].getAsFluidCell())));
             } catch (Exception e) {
                 cellComponent = new JTextField();
-                e.printStackTrace();
+                //e.printStackTrace();
                 cellComponent.setBackground(Color.WHITE);
             }
 

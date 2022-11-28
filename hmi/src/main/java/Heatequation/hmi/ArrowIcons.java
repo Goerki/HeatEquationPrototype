@@ -1,6 +1,7 @@
 package Heatequation.hmi;
 
 import Heatequation.Cells.Cell;
+import Heatequation.Cells.Coordinates;
 import Heatequation.Cells.FluidCell;
 
 import javax.imageio.ImageIO;
@@ -71,15 +72,16 @@ public class ArrowIcons {
 
     private Map<String, Double> getSizeAndDirectionForCell(FluidCell cell) throws Exception{
         Map<String, Double> result = new HashMap<>();
-        Map<FluidCell.particleFlowSource, Double> flow =this.invertParticleFow(cell.getParticleFLow());
-        FluidCell.particleFlowSource xDirection = this.getXDirectionFromAxis();
-        FluidCell.particleFlowSource yDirection = this.getYDirectionFromAxis();
+        //Map<Coordinates.direction, Double> flow =this.invertParticleFow(cell.getParticleFLow());
+        Map<Coordinates.direction, Double> flow =cell.getParticleFLow();
+        Coordinates.direction xDirection = this.getXDirectionFromAxis();
+        Coordinates.direction yDirection = this.getYDirectionFromAxis();
 
-        Map<FluidCell.particleFlowSource, Double> flowVector = new HashMap<>();
+        Map<Coordinates.direction, Double> flowVector = new HashMap<>();
 
-        double xFlow = (flow.get(FluidCell.particleFlowSource.XPLUS1) - flow.get(FluidCell.particleFlowSource.XMINUS1));
-        double yFlow = (flow.get(FluidCell.particleFlowSource.YPLUS1) - flow.get(FluidCell.particleFlowSource.YMINUS1));
-        double zFlow = (flow.get(FluidCell.particleFlowSource.ZPLUS1) - flow.get(FluidCell.particleFlowSource.ZMINUS1));
+        double xFlow = (flow.get(Coordinates.direction.XPLUS1) - flow.get(Coordinates.direction.XMINUS1));
+        double yFlow = (flow.get(Coordinates.direction.YPLUS1) - flow.get(Coordinates.direction.YMINUS1));
+        double zFlow = (flow.get(Coordinates.direction.ZPLUS1) - flow.get(Coordinates.direction.ZMINUS1));
         double flowValue = Math.abs(xFlow) + Math.abs(yFlow) + Math.abs(zFlow);
         switch (axis.toLowerCase()){
             case "x": {
@@ -96,12 +98,12 @@ public class ArrowIcons {
             }
         }
         result.put("flow", flowValue);
-        flowVector.put(FluidCell.particleFlowSource.XPLUS1, xFlow);
-        flowVector.put(FluidCell.particleFlowSource.YPLUS1, yFlow);
-        flowVector.put(FluidCell.particleFlowSource.ZPLUS1, zFlow);
-        flowVector.put(FluidCell.particleFlowSource.XMINUS1, -xFlow);
-        flowVector.put(FluidCell.particleFlowSource.YMINUS1, -yFlow);
-        flowVector.put(FluidCell.particleFlowSource.ZMINUS1, -zFlow);
+        flowVector.put(Coordinates.direction.XPLUS1, xFlow);
+        flowVector.put(Coordinates.direction.YPLUS1, yFlow);
+        flowVector.put(Coordinates.direction.ZPLUS1, zFlow);
+        flowVector.put(Coordinates.direction.XMINUS1, -xFlow);
+        flowVector.put(Coordinates.direction.YMINUS1, -yFlow);
+        flowVector.put(Coordinates.direction.ZMINUS1, -zFlow);
 
         if(flowVector.get(xDirection) != 0) {
             double tangens = flowVector.get(yDirection) / flowVector.get(xDirection);
@@ -124,9 +126,9 @@ public class ArrowIcons {
         return result;
     }
 
-    private Map<FluidCell.particleFlowSource, Double> invertParticleFow(Map<FluidCell.particleFlowSource, Double> particleFLow) {
-        Map<FluidCell.particleFlowSource, Double> result = new HashMap<>();
-        for (FluidCell.particleFlowSource key: particleFLow.keySet()){
+    private Map<Coordinates.direction, Double> invertParticleFow(Map<Coordinates.direction, Double> particleFLow) {
+        Map<Coordinates.direction, Double> result = new HashMap<>();
+        for (Coordinates.direction key: particleFLow.keySet()){
             result.put(key, -particleFLow.get(key));
 
         }
@@ -134,20 +136,20 @@ public class ArrowIcons {
     }
 
 
-    private FluidCell.particleFlowSource getXDirectionFromAxis() {
+    private Coordinates.direction getXDirectionFromAxis() {
         switch(this.axis.toLowerCase()){
-            case "x": return FluidCell.particleFlowSource.ZPLUS1;
-            case "y": return FluidCell.particleFlowSource.XPLUS1;
-            case "z": return FluidCell.particleFlowSource.XPLUS1;
+            case "x": return Coordinates.direction.ZPLUS1;
+            case "y": return Coordinates.direction.XPLUS1;
+            case "z": return Coordinates.direction.XPLUS1;
             default: return null;
         }
     }
 
-    private FluidCell.particleFlowSource getYDirectionFromAxis() {
+    private Coordinates.direction getYDirectionFromAxis() {
         switch(this.axis.toLowerCase()){
-            case "x": return FluidCell.particleFlowSource.YMINUS1;
-            case "y": return FluidCell.particleFlowSource.ZPLUS1;
-            case "z": return FluidCell.particleFlowSource.YPLUS1;
+            case "x": return Coordinates.direction.YMINUS1;
+            case "y": return Coordinates.direction.ZPLUS1;
+            case "z": return Coordinates.direction.YPLUS1;
             default: return null;
         }
     }
