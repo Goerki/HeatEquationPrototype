@@ -1,16 +1,13 @@
 package Heatequation;
 
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.System.Logger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HeatequationLogger {
+public class HeatequationLogger implements Serializable {
     FileWriter fileWriter;
     BufferedWriter writer;
     public enum LogLevel{

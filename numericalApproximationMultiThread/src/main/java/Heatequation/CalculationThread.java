@@ -92,7 +92,7 @@ public class CalculationThread extends Thread implements Serializable {
 
             }
         }
-        throw new Exception("Equation index for cell not found - cell not found in any area");
+        throw new Exception("Equation index for cell not found - cell at coordinate"+ space.allCells.getCoordinatesForCell(cell).toString()+ " not found in any area");
     }
 
 

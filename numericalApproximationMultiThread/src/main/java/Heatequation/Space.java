@@ -11,7 +11,7 @@ import Heatequation.Cells.Coordinates;
 import Heatequation.Cells.Material;
 import Heatequation.Cells.FluidCell;
 
-public class Space implements Serializable {
+public class Space {
     public Cells allCells;
     public int sizeX;
     public int sizeY;
@@ -30,10 +30,12 @@ public class Space implements Serializable {
     public HeatequationLogger logger;
     double startingValue;
     Coordinates logCoords;
+    private double baseAmplificationFactor;
 
 
     public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
-        this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
+        //this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
+        this.logger = new HeatequationLogger("C:\\Users\\TGyoergy\\Desktop\\TGyoergy\\Privat\\Uni\\diplomarbeit\\logs\\heatequation.log");
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
@@ -47,9 +49,41 @@ public class Space implements Serializable {
         this.cellLength = 1;
         this.startingValue = startValue;
         this.logCoords = new Coordinates(2,2,2);
+    }
+
+    public SaveFile createSaveFile(){
+        return new SaveFile(this.allCells.getAllCellsAsArray(), this.sizeX, this.sizeY, this.sizeZ, this.numberCellsForSolidCalculation,
+                this.numberThreads,
+                this.deltaT,
+                this.cellLength,
+                this.numberSteps,
+                this.numberCalculatedSteps
+        );
+    }
+
+    public Space(SaveFile file){
+        //this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
+        this.logger = new HeatequationLogger("C:\\Users\\TGyoergy\\Desktop\\TGyoergy\\Privat\\Uni\\diplomarbeit\\logs\\heatequation.log");
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
+        this.sizeX= file.sizeX;
+        this.sizeY= file.sizeY;
+        this.sizeZ= file.sizeZ;
+        this.allCells = new Cells(file.cells, sizeX,sizeY, sizeZ, this.logger);
+        this.numberThreads=file.numberThreads;
+        this.cellLength = file.cellLength;
+        this.startingValue = 0.0;
+        this.logCoords = new Coordinates(2,2,2);
+        this.isInitialized=false;
+
 
 
     }
+
+
 
     public double getCellLength() {
         return cellLength;
@@ -382,7 +416,7 @@ public class Space implements Serializable {
     }
 
     private double calcDiffusionForCell(Coordinates cell){
-        double baseFactor = 0.075;
+        double baseFactor = this.baseAmplificationFactor;
         return baseFactor*allCells.getCell(cell).getLastValue()*allCells.getCell(cell).getAlpha()*deltaT*allCells.getCell(cell).getAsFluidCell().getLastNumberParticles();
     }
 
@@ -397,7 +431,7 @@ public class Space implements Serializable {
     }
 
      private double calcConvectionForCell(Coordinates coordinates){
-        double baseFactor = 20;
+        double baseFactor =4*baseAmplificationFactor;
         baseFactor *= (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()));
         baseFactor *= this.allCells.getCell(coordinates).getAlpha()*this.allCells.getCell(coordinates).getAsFluidCell().getLastNumberParticles()*deltaT;
 

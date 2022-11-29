@@ -1,5 +1,6 @@
 package Heatequation.hmi;
 
+import Heatequation.SaveFile;
 import Heatequation.Space;
 
 import javax.swing.*;
@@ -91,7 +92,8 @@ public class StartupWindow extends JDialog {
         try {
             FileInputStream fileOut = new FileInputStream(loadFile);
         ObjectInputStream objectInputStream = new ObjectInputStream(fileOut);
-        return (Space) objectInputStream.readObject();
+        SaveFile saveFile = (SaveFile) objectInputStream.readObject();
+        return new Space(saveFile);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {

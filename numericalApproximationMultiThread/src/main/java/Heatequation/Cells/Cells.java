@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Cells implements Serializable {
-    Cell[][][] cells;
+    private Cell[][][] cells;
     public int sizeX;
     public int sizeY;
     public int sizeZ;
@@ -28,6 +28,20 @@ public class Cells implements Serializable {
         initAllCells(value, material);
         cellsForSolidCalculation = new ArrayList<>();
 
+    }
+
+
+    public Cell[][][] getAllCellsAsArray(){
+        return this.cells;
+    }
+    public Cells(Cell[][][] cells, int sizex, int sizey, int sizez, HeatequationLogger logger){
+        this.sizeX = sizex;
+        this.sizeY = sizey;
+        this.sizeZ = sizez;
+        this.logger= logger;
+        this.cells = cells;
+        initCoords();
+        cellsForSolidCalculation = new ArrayList<>();
     }
 
     public Cells(int sizeX, int sizeY, int sizeZ, double value, Material material, HeatequationLogger logger){
@@ -502,6 +516,20 @@ public class Cells implements Serializable {
 
     public Cell getCell(int x, int y, int z){
         return this.cells[x][y][z];
+    }
+
+    public Coordinates getCoordinatesForCell(Cell cell){
+        for (int x=0; x<this.sizeX; x++){
+            for (int y=0; y<this.sizeY; y++){
+                for (int z=0; z<this.sizeZ; z++) {
+                if (this.cells[x][y][z].equals(cell)){
+                    return new Coordinates(x,y,z);
+                }
+                }
+            }
+
+        }
+        return new Coordinates(-1,-1,-1);
     }
 
 
