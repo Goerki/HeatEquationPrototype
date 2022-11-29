@@ -1,10 +1,6 @@
 package Heatequation;
 
 import Heatequation.Cells.Coordinates;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 import java.awt.*;
 import java.io.File;
