@@ -102,9 +102,9 @@ getRootPane().disable();
 
 
 
-    public ConstructionWindow(int sizex, int sizey, int sizez, double startTemperature) {
+    public ConstructionWindow(int sizex, int sizey, int sizez, double startTemperature, double amplificationFactor) {
         praeInit();
-        this.space = new Space(sizex, sizey, sizez, startTemperature, solidMaterials.get(0), 4);
+        this.space = new Space(sizex, sizey, sizez, startTemperature, solidMaterials.get(0), 4, amplificationFactor);
         if(this.space != null){
             int numberCells = space.sizeX * space.sizeY * space.sizeZ;
             this.showTextOnConsole("new space with " + numberCells+ " cells created.   " + space.sizeX + " x " + space.sizeY + " x "+ space.sizeZ);

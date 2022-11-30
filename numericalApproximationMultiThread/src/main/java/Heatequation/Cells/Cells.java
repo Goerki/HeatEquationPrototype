@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Cells implements Serializable {
-    private Cell[][][] cells;
+    protected Cell[][][] cells;
     public int sizeX;
     public int sizeY;
     public int sizeZ;

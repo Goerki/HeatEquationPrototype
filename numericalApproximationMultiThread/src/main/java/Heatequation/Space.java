@@ -32,7 +32,7 @@ public class Space {
     private double baseAmplificationFactor;
 
 
-    public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
+    public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads, double baseAmplificationFactor){
         //this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
         this.logger = new HeatequationLogger("C:\\Users\\TGyoergy\\Desktop\\TGyoergy\\Privat\\Uni\\diplomarbeit\\logs\\heatequation.log");
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
@@ -48,6 +48,8 @@ public class Space {
         this.cellLength = 1;
         this.startingValue = startValue;
         this.logCoords = new Coordinates(2,2,2);
+        this.initHistory(20);
+        this.baseAmplificationFactor=baseAmplificationFactor;
     }
 
     public SaveFile createSaveFile(){
@@ -60,7 +62,7 @@ public class Space {
         );
     }
 
-    public Space(SaveFile file) {
+    public Space(SaveFile file, double baseAmplificationFactor) {
         //this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
         this.logger = new HeatequationLogger("C:\\Users\\TGyoergy\\Desktop\\TGyoergy\\Privat\\Uni\\diplomarbeit\\logs\\heatequation.log");
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
@@ -75,8 +77,10 @@ public class Space {
         this.numberThreads = file.numberThreads;
         this.cellLength = file.cellLength;
         this.startingValue = 0.0;
-        this.logCoords = new Coordinates(2, 2, 2);
+        this.logCoords = new Coordinates(0, 0, 0);
         this.isInitialized = false;
+        this.initHistory(20);
+        this.baseAmplificationFactor=baseAmplificationFactor;
     }
 
 
@@ -336,7 +340,7 @@ public class Space {
             if (allCells.getCell(coords).isFluid()){
                 allCells.getCell(coords).addToValue((allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue()) *allCells.getCell(coords).getAsFluidCell().getNusseltNumber());
             } else {
-                double diff = allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue();
+                //double diff = allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue();
                 allCells.getCell(coords).addToValue(allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue() );
             }
         }
