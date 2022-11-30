@@ -177,12 +177,15 @@ public class MainThread extends CalculationThread  {
             }
 
             this.space.logFluidCell("beginning        ", logCoords);
+            System.out.print("\n");
+            this.space.logLogCell("start");
             //solid calculation , status 1
             this.runAllThreads();
             this.solidCalculation();
             waitSolidCalculationsReady();
             this.space.logFluidCell("afterSolid       ", logCoords);
-            System.out.print("after solid calculation");
+            this.space.logLogCell("after solid");
+            //System.out.print("after solid calculation");
             //this.areas.get(0).printPressureForAllCells(space);
 
             //for debugging purposes only
@@ -193,6 +196,7 @@ public class MainThread extends CalculationThread  {
             this.overwriteOldSolidValues();
             waitSolidValuesOverwritten();
             this.space.logFluidCell("solidOverwritten ", logCoords);
+            this.space.logLogCell("solidOverwritten");
             this.resetAllParticleFlows();
 
 
@@ -200,6 +204,7 @@ public class MainThread extends CalculationThread  {
             this.initParticleFlowCalculation();
             waitParticleFlowCalculationInitialized();
             this.space.logFluidCell("flow initialized ", logCoords);
+            this.space.logLogCell("flow initialized");
 
 
 
@@ -213,7 +218,8 @@ public class MainThread extends CalculationThread  {
             this.applyDiffussionAndUplift();
             waitDiffussionAndUpliftApplied();
             this.space.logFluidCell("fluidCalculation ", logCoords);
-            System.out.print("after solid calculation");
+            System.out.print("after fluid calculation");
+            this.space.logLogCell("uplift and diffussion applied");
             this.areas.get(0).printPressureForAllCells(space);
 
 
@@ -294,6 +300,7 @@ public class MainThread extends CalculationThread  {
 
 
             this.initializeNormalizationForAllAreas();
+            this.space.logLogCell("before normalization");
 
             //this.limitEquations();
 
@@ -311,6 +318,7 @@ public class MainThread extends CalculationThread  {
             this.finishNormalization();
             waitNormalizationFinished();
             this.space.logFluidCell("Normalization finished  ", logCoords);
+            this.space.logLogCell("after normalization");
 
 
 

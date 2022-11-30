@@ -97,4 +97,12 @@ public class Cell implements Serializable {
     public boolean isSolid(){
         return !this.isFluid;
     }
+
+    public double getConductivity() {
+        return this.material.getheatConductivity();
+    }
+
+    public double getCapacity() {
+        return this.material.getHeatCapacity();
+    }
 }

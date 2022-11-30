@@ -69,6 +69,10 @@ public class CalculationThread extends Thread implements Serializable {
             stop();
         }
 
+    private void logLogCell(String message) {
+        this.space.logLogCell(message);
+    }
+
     protected void solveEquation(List<SystemOfEquations> equationsList, List<CellArea> fluidAreaList) {
         for (Coordinates eachCoord: this.fluidCells){
             FluidCell eachCell = this.space.allCells.getCell(eachCoord).getAsFluidCell();

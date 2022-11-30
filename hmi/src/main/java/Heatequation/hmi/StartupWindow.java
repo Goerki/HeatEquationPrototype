@@ -14,7 +14,7 @@ public class StartupWindow extends JDialog {
     private JTextPane createANewCalculationTextPane;
     private JButton newAreaButton;
     private JButton openAreaButton;
-    private double baseAmplificationFactor=0.1;
+    private double baseAmplificationFactor=1;
 
 
     private void createNewAreaSizeWindow(){
