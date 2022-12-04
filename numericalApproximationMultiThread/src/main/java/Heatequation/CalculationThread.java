@@ -69,6 +69,10 @@ public class CalculationThread extends Thread implements Serializable {
             stop();
         }
 
+    private void logLogCell(String message) {
+        this.space.logLogCell(message);
+    }
+
     protected void solveEquation(List<SystemOfEquations> equationsList, List<CellArea> fluidAreaList) {
         for (Coordinates eachCoord: this.fluidCells){
             FluidCell eachCell = this.space.allCells.getCell(eachCoord).getAsFluidCell();
@@ -129,7 +133,7 @@ public class CalculationThread extends Thread implements Serializable {
 
             }
         }
-        throw new Exception("Equation index for cell not found - cell not found in any area");
+        throw new Exception("Equation index for cell not found - cell at coordinate"+ space.allCells.getCoordinatesForCell(cell).toString()+ " not found in any area");
     }
 
 

@@ -9,7 +9,7 @@ import java.util.Map;
 import Heatequation.Cells.*;
 import org.apache.commons.math3.analysis.function.Log;
 
-public class Space implements Serializable {
+public class Space {
     public Cells allCells;
     public int sizeX;
     public int sizeY;
@@ -29,11 +29,17 @@ public class Space implements Serializable {
     double startingValue;
     Coordinates logCoords;
     public VisualizationCells[] history;
+    private double baseAmplificationFactor;
 
 
+    private void setLoggerCell(){
+        this.logCoords = new Coordinates(3, 5, 3);
+    }
 
-    public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads){
-        this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
+
+    public Space(int sizeX, int sizeY, int sizeZ, double startValue, Material material, int numberThreads, double baseAmplificationFactor){
+        //this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
+        this.logger = new HeatequationLogger("C:\\Users\\TGyoergy\\Desktop\\TGyoergy\\Privat\\Uni\\diplomarbeit\\logs\\heatequation.log");
         //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
         this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
@@ -46,9 +52,42 @@ public class Space implements Serializable {
         this.numberThreads=numberThreads;
         this.cellLength = 1;
         this.startingValue = startValue;
-        this.logCoords = new Coordinates(2,2,4);
+        this.setLoggerCell();
         this.initHistory(20);
+        this.baseAmplificationFactor=baseAmplificationFactor;
     }
+
+    public SaveFile createSaveFile(){
+        return new SaveFile(this.allCells.getAllCellsAsArray(), this.sizeX, this.sizeY, this.sizeZ, this.numberCellsForSolidCalculation,
+                this.numberThreads,
+                this.deltaT,
+                this.cellLength,
+                this.numberSteps,
+                this.numberCalculatedSteps
+        );
+    }
+
+    public Space(SaveFile file, double baseAmplificationFactor) {
+        //this.logger = new HeatequationLogger("C:\\Users\\thoni\\Documents\\heatEquationLogs\\heatequation.log");
+        this.logger = new HeatequationLogger("C:\\Users\\TGyoergy\\Desktop\\TGyoergy\\Privat\\Uni\\diplomarbeit\\logs\\heatequation.log");
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.DEBUG);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.ERROR);
+        this.logger.addToLoglevel(HeatequationLogger.LogLevel.INFO);
+        //this.logger.addToLoglevel(HeatequationLogger.LogLevel.SYTEMOFEQUATIONS);
+        this.logger.logMessage(HeatequationLogger.LogLevel.INFO, "\n\n\n\n ======================\n\nSpace started");
+        this.sizeX = file.sizeX;
+        this.sizeY = file.sizeY;
+        this.sizeZ = file.sizeZ;
+        this.allCells = new Cells(file.cells, sizeX, sizeY, sizeZ, this.logger);
+        this.numberThreads = file.numberThreads;
+        this.cellLength = file.cellLength;
+        this.startingValue = 0.0;
+        this.setLoggerCell();
+        this.isInitialized = false;
+        this.initHistory(20);
+        this.baseAmplificationFactor=baseAmplificationFactor;
+    }
+
 
     private void initHistory(int size) {
         history = new VisualizationCells[size];
@@ -301,27 +340,33 @@ public class Space implements Serializable {
         if (allCells.getCell(coords).getConstantTemperature()!= -1){
             return;
         }
-        allCells.getCell(coords).setValue(0);
-        for(Coordinates neighbourCell: allCells.getAllAdjacentCellsForSolidCalculation(coords)) {
-            if (allCells.getCell(coords).isFluid()){
-                allCells.getCell(coords).addToValue((allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue()) *allCells.getCell(coords).getAsFluidCell().getNusseltNumber());
+        Cell calcCell = allCells.getCell(coords);
+        if (coords.equals(logCoords)){
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "calculating log cell ");
+        }
+
+        calcCell.setValue(0);
+        for(Coordinates neighbourCellCoords: allCells.getAllAdjacentCellsForSolidCalculation(coords)) {
+            Cell neighbourCell = allCells.getCell(neighbourCellCoords);
+            if (calcCell.isFluid()){
+                calcCell.addToValue((neighbourCell.getLastValue() -calcCell.getLastValue()) *neighbourCell.getConductivity()*calcCell.getConductivity()/100);
             } else {
-                double diff = allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue();
-                allCells.getCell(coords).addToValue(allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue() );
+                //double diff = allCells.getCell(neighbourCell).getLastValue() -allCells.getCell(coords).getLastValue();
+                calcCell.addToValue((neighbourCell.getLastValue() -calcCell.getLastValue())*neighbourCell.getConductivity() );
             }
         }
         if (coords.equals(logCoords)){
             this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "difference before: " + allCells.getCell(coords).getValue());
         }
-        allCells.getCell(coords).setValue(allCells.getCell(coords).getValue() *this.deltaT*allCells.getCell(coords).getAlpha()/this.cellLength);
+        calcCell.setValue(calcCell.getValue() *this.deltaT/calcCell.getCapacity()/this.cellLength);
 
         if (coords.equals(logCoords)){
-            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "difference after: " + allCells.getCell(coords).getValue());
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "difference after: " + calcCell.getValue());
         }
-        allCells.getCell(coords).addToValue(allCells.getCell(coords).getLastValue());
-        allCells.getCell(coords).addToValue(allCells.getCell(coords).getHeatFlow()*this.deltaT);
+        calcCell.addToValue(calcCell.getLastValue());
+        calcCell.addToValue(calcCell.getHeatFlow()*this.deltaT);
         if (coords.equals(logCoords)){
-            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "Zelle " + logCoords + " : temperatur " + allCells.getCell(coords).getValue());
+            this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "Zelle " + logCoords + " : temperatur " + calcCell.getValue());
         }
 
     }
@@ -426,6 +471,7 @@ public class Space implements Serializable {
         if (allCells.cellExists(coord.getCellYPlus1()) && allCells.getCell(coord.getCellYPlus1()).isFluid()) {
             this.particleFlowFromTo(coord, coord.getCellYPlus1(), convection);
         } else {
+            /*
             int numberAdjacentCellsInThisLayer = 0;
             List<Coordinates.direction> allNeighborDirections = new ArrayList<>();
             allNeighborDirections.addAll(this.allCells.getCell(coord).getAsFluidCell().getNeighborDirections());
@@ -446,6 +492,8 @@ public class Space implements Serializable {
                 }
             }
 
+
+             */
         }
     }
 
@@ -498,8 +546,9 @@ public class Space implements Serializable {
      */
     private double calcDiffusionForCell(Coordinates cell){
         //DIFFUSION BASEFACTOR
-        double baseFactor = 0.1;
-        baseFactor *=allCells.getCell(cell).getLastValue()*allCells.getCell(cell).getAlpha();
+        double baseFactor = this.baseAmplificationFactor;
+        FluidCell calcCell = allCells.getCell(cell).getAsFluidCell();
+        baseFactor *=calcCell.getLastValue()/calcCell.getViskosity();
         this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "basefactor for temp and material" + cell.toString() + ": " + baseFactor);
         baseFactor *=deltaT;
         this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "basefactor for delta T" + cell.toString() + ": " + baseFactor);
@@ -536,7 +585,7 @@ public class Space implements Serializable {
      private double calcConvectionForCell(Coordinates coordinates){
 
         //CONVECTION BASE FACTOR
-        double baseFactor = 0.4;
+        double baseFactor = 4*baseAmplificationFactor;
         baseFactor *= (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()));
         baseFactor *= this.allCells.getCell(coordinates).getAlpha()*this.allCells.getCell(coordinates).getAsFluidCell().getLastNumberParticles()*deltaT;
 
@@ -544,7 +593,8 @@ public class Space implements Serializable {
              this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, "meanValueForLayer : " + getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell()) + " leads to difference: " + (this.allCells.getCell(coordinates).getLastValue() - getMeanValueForAreaAndLayer(coordinates, this.allCells.getCell(coordinates).getAsFluidCell())));
          }
 
-        return baseFactor;
+        //return baseFactor;
+         return 0;
     }
 
     public void logFluidCell(String introduction, Coordinates coords){
@@ -861,5 +911,12 @@ public class Space implements Serializable {
             }
             return minValue;
         }
+    }
+
+    public void logLogCell(String message) {
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, message);
+        System.out.print(message+ "\n");
+        this.logger.logMessage(HeatequationLogger.LogLevel.DEBUG, this.allCells.getCell(logCoords).toString());
+        System.out.print(this.allCells.getCell(logCoords).toString()+ "\n");
     }
 }

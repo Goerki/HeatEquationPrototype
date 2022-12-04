@@ -459,4 +459,7 @@ public class FluidCell extends Cell implements Serializable {
     }
 
 
+    public double getViskosity() {
+        return this.material.getViskosity();
+    }
 }

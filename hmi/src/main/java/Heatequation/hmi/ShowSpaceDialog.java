@@ -161,7 +161,7 @@ public class ShowSpaceDialog extends JDialog {
         try {
             fileOut = new FileOutputStream(savefile);
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
-            objectOut.writeObject(this.space);
+            objectOut.writeObject(this.space.createSaveFile());
             objectOut.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();

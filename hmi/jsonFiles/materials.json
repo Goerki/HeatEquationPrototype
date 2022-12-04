@@ -3,33 +3,33 @@
     {
       "name":"iron",
       "heatCapacity":"3500",
-      "heatConductivity":"8000",
+      "heatConductivity":"80",
       "color":"D7D7D7"
     },
     {
       "name":"gold",
       "heatCapacity":"2509",
-      "heatConductivity":"32000",
+      "heatConductivity":"314",
       "color":"DBA372"
     },
     {
       "name":"concrete",
       "heatCapacity":"100",
-      "heatConductivity":"100",
+      "heatConductivity":"2.1",
       "color":"C2C2C2"
     },
     {
       "name":"wood",
       "heatCapacity":"100",
-      "heatConductivity":"100",
+      "heatConductivity":"0.1",
       "color":"A16614"
     }
   ],
   "FluidMaterials":[
     {
       "name":"air",
-      "heatCapacity":"1",
-      "heatConductivity":"0.0012",
+      "heatCapacity":"0.0012",
+      "heatConductivity":"0.027",
       "viskosity":"0.1",
       "nusselt":"10",
       "color":"DFFFFF"

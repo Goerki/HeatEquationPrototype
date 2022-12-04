@@ -12,10 +12,12 @@ public class NewAreaSizeWindow extends JDialog {
     private JTextField sizeZField;
     private JTextField startingTemperatureField;
     private JTextField cellLengthField;
+    private double amplificationFactor;
 
-    public NewAreaSizeWindow() {
+    public NewAreaSizeWindow(double amplificationFactor) {
         setContentPane(contentPane);
         setModal(true);
+        this.amplificationFactor=amplificationFactor;
         getRootPane().setDefaultButton(buttonOK);
 
         buttonOK.addActionListener(new ActionListener() {
@@ -81,7 +83,7 @@ public class NewAreaSizeWindow extends JDialog {
         if (this.validInput()) {
             dispose();
             ConstructionWindow nextWindow = new ConstructionWindow(Integer.valueOf(sizeXField.getText()),
-                    Integer.valueOf(sizeYField.getText()), Integer.valueOf(sizeZField.getText()), Integer.valueOf(startingTemperatureField.getText()));
+                    Integer.valueOf(sizeYField.getText()), Integer.valueOf(sizeZField.getText()), Integer.valueOf(startingTemperatureField.getText()), this.amplificationFactor);
             nextWindow.pack();
             nextWindow.setVisible(true);
 
@@ -101,7 +103,7 @@ public class NewAreaSizeWindow extends JDialog {
     }
 
     public static void main(String[] args) {
-        NewAreaSizeWindow dialog = new NewAreaSizeWindow();
+        NewAreaSizeWindow dialog = new NewAreaSizeWindow(1);
         dialog.pack();
         dialog.setVisible(true);
         System.exit(0);

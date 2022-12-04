@@ -1,5 +1,6 @@
 package Heatequation.hmi;
 
+import Heatequation.SaveFile;
 import Heatequation.Space;
 
 import javax.swing.*;
@@ -13,11 +14,12 @@ public class StartupWindow extends JDialog {
     private JTextPane createANewCalculationTextPane;
     private JButton newAreaButton;
     private JButton openAreaButton;
+    private double baseAmplificationFactor=1;
 
 
     private void createNewAreaSizeWindow(){
 
-        NewAreaSizeWindow nextWindow = new NewAreaSizeWindow();
+        NewAreaSizeWindow nextWindow = new NewAreaSizeWindow(this.baseAmplificationFactor);
         nextWindow.pack();
         this.setVisible(false);
         this.getRootPane().setVisible(false);
@@ -28,6 +30,7 @@ public class StartupWindow extends JDialog {
 
         setContentPane(contentPane);
         setModal(true);
+
 
         buttonCancel.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -91,7 +94,8 @@ public class StartupWindow extends JDialog {
         try {
             FileInputStream fileOut = new FileInputStream(loadFile);
         ObjectInputStream objectInputStream = new ObjectInputStream(fileOut);
-        return (Space) objectInputStream.readObject();
+        SaveFile saveFile = (SaveFile) objectInputStream.readObject();
+        return new Space(saveFile, this.baseAmplificationFactor);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
